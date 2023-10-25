@@ -13,11 +13,12 @@
 
 SHELL=/bin/bash
 
-.SUFFIXES: .mzML .raw .csv .fp-manifest .fasta .fas .zip
+.SUFFIXES: .mzML .raw .csv .fp-manifest .fasta .fas .zip .mzMLcheck
 .PHONY : dep clean .clean.raw .clean.zip .clean.fasta all fasta zip __dia __dda test check stagelog zipfasta .check-diann .check-R .check-FASTA diann qc qc_result/proteinAbundances.html diannopts
 
 RAW               = $(shell find . -type f -name "*.raw")
 MZML              = $(RAW:.raw=.mzML)
+MZMLCHECK         = $(MZML:.mzML=.mzMLcheck)
 
 MSCONVERTOPTS     = chambm/pwiz-skyline-i-agree-to-the-vendor-licenses wine msconvert --mzML --64 --zlib --filter "peakPicking true 1-"
 
@@ -38,7 +39,7 @@ DIANNLIBS := --out-lib ${DIANNOUTPUT}/WU${WORKUNITID}_report-lib.tsv --out-lib-c
 
 list:
 	ls -l $(RAW)
-	echo $(MZML)
+	echo $(MZMLCHECK)
 
 help:
 	grep "^## " Makefile
@@ -46,8 +47,7 @@ help:
 convert: $(MZML)
 
 .raw.mzML:
-	#declare -F write_workunitlog && write_workunitlog $(EXTERNALJOBID) "converting to mzML $< ..."
-	docker run -t --network none -w ${PWD} -v ${PWD}:${PWD} $(MSCONVERTOPTS) $< -o $@
+	docker run -t --network none -w ${PWD} -v ${PWD}:${PWD} $(MSCONVERTOPTS) $< -o $(shell dirname $<)
 
 unzip: 
 	ls | grep .d.zip$$ | parallel -j 16 unzip 
@@ -65,8 +65,12 @@ diann: diannopts
     --out ${DIANNOUTPUT}/WU${WORKUNITID}_report.tsv \
     $(DIANNFASTA) | tee diann.log.txt 
 
+.mzML.mzMLcheck:
+	xmllint --noout $< > $@ 
 
 .clean-mzML:
 	find . -type f -name "*.mzML" -exec $(RM) -v {} \;
+	find . -type d -name "*.mzML" -exec rmdir -v {} \;
 
+check: $(MZMLCHECK)
 clean: .clean-mzML
