@@ -40,12 +40,11 @@ dashboardPage(
       ),
       tabItem(tabName = "iRTprofiles",
               fluidRow(
-                box(plotOutput("plotiRTDDAChromatograms", height = 300, width = 1000),
+                box(plotOutput("plotiRTDDAChromatograms", height = 300, width = 1000)
                 )
                 
               ),
               fluidRow(
-                
                 box(plotOutput("plotiRTfits", height = 300, width = 300))
               ),
               fluidRow(
@@ -59,7 +58,14 @@ dashboardPage(
                                     inline = TRUE,
                                     width = NULL
               ))
-      )
+      ),
+      tabItem(tabName = "tic",
+              fluidRow(
+                h2("Total ion count"),
+                fluidRow(
+                  box(plotOutput("plotTIC", height = 400, width = 1000))
+                )
+              ))
     )
   )
 )
