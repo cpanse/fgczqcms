@@ -202,6 +202,7 @@ function(input, output, session) {
     #text(iRTscore, rt, iRTmz, pos=1,cex=0.5)
   })
   
-  output$plotiRTfits2 <- renderPlot({plot(0,0)})
+ 
+  output$plotTIC <- renderPlot({ .tic(input$file) })
 
 }
