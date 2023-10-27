@@ -14,7 +14,15 @@ stopifnot(require(readr), require(reshape2), require(shinydashboard))
   x
 }
 
+.tic <- function(f){
+  message(f)
+  rawrr::readChromatogram(f, type='tic') |>
+    plot()
+}
 
+.iRTprofile <- function(f){
+  plot(0, 0, sub=f, type = 'n', xlab='', ylab=''); text(0,0, "t.b.d", cex=5)
+}
 # define server logic ============
 function(input, output, session) {
   
@@ -54,6 +62,20 @@ function(input, output, session) {
              difftime(now, long()$Time, units = "days") < input$days[2], ]
   }) 
   
+  rootdir <- reactive({"/Users/cp/Downloads/dump/"})
+  
+  files <- reactive({
+    
+    data()$File.Name |>
+      unique() |>
+      lapply(function(f){
+        if(file.exists(file.path(rootdir(), f)))
+          return(f)
+        NULL
+        }) |>
+      unlist()
+  })
+  
   #  renderUIs =============
   output$instrument <- renderUI({
     selectInput('instrument', 'Instruments',
@@ -70,14 +92,28 @@ function(input, output, session) {
                 selected = defaulVariables)
   })
   
+  output$file <- renderUI({
+    selectInput('file', 'Files',
+                files(),
+                multiple = FALSE,
+                selected = files()[1])
+  })
+  
   # renderPlots ==========
   output$plot1 <- renderPlot({
-    lattice::xyplot(value ~ Time | variable,
-                    group = Instrument,
-                    data = data(),
-                    scales = 'free',
-                    type = 'b',
-                    layout = c(1, length(input$variables)),
-                    auto.key = list(space = "bottom"))
+    if(input$method == "DIANN"){
+      lattice::xyplot(value ~ Time | variable,
+                      group = Instrument,
+                      data = data(),
+                      scales = 'free',
+                      type = 'b',
+                      layout = c(1, length(input$variables)),
+                      auto.key = list(space = "bottom"))
+    }else if (input$method == "TIC"){
+      .tic(file.path(rootdir(),input$file))
+    }
+    else{
+      .iRTprofile(input$file)
+    }
   })
 }
