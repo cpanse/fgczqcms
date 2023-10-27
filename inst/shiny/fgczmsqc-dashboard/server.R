@@ -161,7 +161,7 @@ function(input, output, session) {
   output$table <- renderDataTable({ data() })
   
   output$plotiRTDDAChromatograms <- renderPlot({
-    iRTprofileRawDDA() |> plot(main=input$file)
+    iRTprofileRawDDA() |> plot(main=gsub(rootdir(), "", input$file))
     
   })
   
@@ -187,7 +187,7 @@ function(input, output, session) {
       sapply(function(x){x$xx[which.max(x$yp)[1]]})
     
     fit <- lm(rtFittedAPEX ~ iRTscore)
-    par(mfrow = c(1, 1), mar=c(5,5,4,1))
+    par(mfrow = c(1, 1), mar=c(5, 5, 4, 1))
     plot(rtFittedAPEX ~ iRTscore,
          ylab = 'Retention time [min]',
          xlab = "iRT score",
