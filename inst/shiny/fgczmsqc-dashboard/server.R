@@ -4,6 +4,8 @@
 # requirements ===========
 stopifnot(require(readr), require(reshape2), require(shinydashboard))
 
+#stopifnot(require(bfabricShiny))
+
 .plotChromatogramSet <- function (x, diagnostic = FALSE, ...) 
 {
   stopifnot(attr(x, "class") == "rawrrChromatogramSet")
@@ -53,7 +55,8 @@ stopifnot(require(readr), require(reshape2), require(shinydashboard))
 # define server logic ============
 function(input, output, session) {
   #  reactives =============
-  iRTprofileRawDDA <- reactive({
+  
+  iRTmz <- reactive({
     iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384, 683.8282,
                683.8541, 699.3388, 726.8361, 776.9301)
     
@@ -62,7 +65,25 @@ function(input, output, session) {
                       "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
                       "LFLQFGAQGSPFLK")
     
-    rawrr::readChromatogram(input$file, mass = iRTmz, tol = as.integer(input$ppmError), type = "xic", filter = "ms") 
+    iRTmz
+  })
+  
+  iRTprofileRawDDA <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading iRT peptide profiles ...")
+    on.exit(progress$close())
+    
+    rawrr::readChromatogram(input$file, mass = iRTmz(), tol = as.integer(input$ppmError), type = "xic", filter = "ms") 
+  })
+  
+  rtFittedAPEX <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Fitting iRT APEXs ...")
+    on.exit(progress$close())
+    
+    iRTprofileRawDDA() |>
+      rawrr:::pickPeak.rawrrChromatogram() |>
+      rawrr:::fitPeak.rawrrChromatogram()
   })
   
   iRTprofileRawDIA <- reactive({
@@ -85,17 +106,70 @@ function(input, output, session) {
       rawrr::readChromatogram(mass = yIonSeries, tol = 15, type = "xic", filter = "ms2") 
   })
   
- 
+  ###### comet --------
+  comet <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading comet data ...")
+    on.exit(progress$close())
+    e <- new.env()
+    fn <- rootdir() |> file.path("comet-20231030.RData")  |> load(envir=e)
+    
+    e$comet$assignmentRate <- round (100 * e$comet$nConfidentPSM / e$comet$nPSM)
+    e$comet$Time <- as.POSIXct(e$comet$time )
+    
+    cc <- c('md5', 'filename.y', 'Time', 'instrument',  'scanType', 'psmFdrCutoff',
+            'nDecoyPSM', 'nConfidentPSM', 'nDecoyPeptide', 'nConfidentPeptide',
+            'nDecoyProteins', 'nConfidentProteins', 'fdrPSM', 'fdrPeptide',
+            'fdrProtein',  'size',   'nMS2', 'TIC')
+    
+    
+    e$comet[grepl(input$regex, e$comet$filename.y), cc]
+  })
+  
+  cometFilter <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Filtering comet data acc. time and instrument ...")
+    on.exit(progress$close())
+    
+    now <- Sys.time()
+    
+    filter <- input$cometDays[1] <= difftime(now, comet()$Time, units = "days")  &
+      difftime(now, comet()$Time, units = "days") < input$cometDays[2] &
+      comet()$instrument %in% input$instrument 
+    
+    filter
+  })
+  
+  cometLong <- reactive({
+    rv <- comet() |>
+      reshape2::melt(id.vars = c("md5", "filename.y", "Time", "instrument",
+                                 "scanType"))
+  })
+  
+  cometVariables <- reactive({
+    cometLong()$variable |> unique()
+  })
+  
+  cometData <- reactive({
+    now <- Sys.time()
+    cometLong()[cometLong()$instrument %in% input$instrument &
+                  cometLong()$variable %in% input$cometVariables &
+                  input$cometDays[1] <=  difftime(now, cometLong()$Time, units = "days") &
+                  difftime(now, cometLong()$Time, units = "days") < input$cometDays[2], ]
+  }) 
+  
+  
+  ########### diann -----------
   wide <- reactive({
     S <- rootdir() |> 
       file.path("output.txt") |> readr::read_delim(
-                      delim = ";",
-                      escape_double = FALSE,
-                      col_types = cols(Time = col_datetime(format = "%s"),
-                                       Size = col_integer(),
-                                       Precursors.Identified = col_integer(),
-                                       Proteins.Identified = col_integer()), 
-                      trim_ws = TRUE) 
+        delim = ";",
+        escape_double = FALSE,
+        col_types = cols(Time = col_datetime(format = "%s"),
+                         Size = col_integer(),
+                         Precursors.Identified = col_integer(),
+                         Proteins.Identified = col_integer()), 
+        trim_ws = TRUE) 
     
     S <- S[grepl(input$regex, S$File.Name), ]
     
@@ -107,10 +181,15 @@ function(input, output, session) {
     wide() |> reshape2::melt(id.vars = c("Md5", "File.Name", "Time", "Instrument"))
   })
   
+  
+  ####### instruments -----------
   instruments <- reactive({
-    wide()$Instrument |> unique()
+    c(wide()$Instrument |> unique(),
+      comet()$instrument |> unique()) |> 
+      unique()
   })
   
+  ####### variables -----------
   variables <- reactive({
     long()$variable |> unique()
   })
@@ -119,8 +198,8 @@ function(input, output, session) {
     now <- Sys.time()
     long()[long()$Instrument %in% input$instrument &
              long()$variable %in% input$variables &
-             input$days[1] <=  difftime(now, long()$Time, units = "days") &
-             difftime(now, long()$Time, units = "days") < input$days[2], ]
+             input$diannDays[1] <=  difftime(now, long()$Time, units = "days") &
+             difftime(now, long()$Time, units = "days") < input$diannDays[2], ]
   }) 
   
   rootdir <- reactive({
@@ -129,29 +208,76 @@ function(input, output, session) {
       if (dir.exists(d))return(d)
     }
     NULL
-    })
+  })
+  
+  rootdirraw <- reactive({
+    cands <- c("/srv/www/htdocs/", "/scratch/DIAQC/qc/dump")
+    for (d in cands){
+      if (dir.exists(d))return(d)
+    }
+    NULL
+  })
   
   files <- reactive({
-    data()$File.Name |>
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Composing file list ...")
+    on.exit(progress$close())
+    
+    c(data()$File.Name[data()$Instrument %in% input$instrument],
+      comet()$filename.y[comet()$instrument %in% input$instrument]) |>
       unique() |>
       lapply(function(f){file.path(rootdir(), f)}) |>
       lapply(function(f){
         if(file.exists(f)){return(f)}
         else{
-          msg <- paste0("Can not find file ", f)
-          message(msg)
+          # msg <- paste0("Can not find file ", f)
+          # message(msg)
         }
         NULL
-        }) |>
-      unlist()
+      }) |>
+      unlist() 
   })
   
   #  renderUIs =============
+  
+  #### cometVariable ------------
+  output$cometVariable <- renderUI({
+    
+    defaulVariables <- c('nMS2')
+    
+    selectInput('cometVariables', 'Variables',
+                cometVariables(),
+                multiple = FALSE,
+                selected = defaulVariables)
+    
+  })
+  
+  output$cometTimeSlider <- renderUI({
+    mintime <- min(cometLong()$Time)
+    now <- Sys.time()
+    sliderInput("cometDays", "Observation range in days:", min = 0,
+                max = difftime(now, mintime, units = 'days') |>
+                  round() |> as.integer(),
+                value = c(0, 28), width = 1000)
+  })
+  
+  
+  output$diannTimeSlider <- renderUI({
+    mintime <- min(long()$Time)
+    now <- Sys.time()
+    
+    sliderInput("diannDays", "Observation range in days:", min = 0,
+                max = difftime(now, mintime, units = 'days') |>
+                  round() |> as.integer(),
+                value = c(0, 28), width = 1000)
+  })
+  
+  
   output$instrument <- renderUI({
     selectInput('instrument', 'Instruments',
                 instruments(),
                 multiple = TRUE,
-                selected = instruments())
+                selected = instruments()[1])
   })
   
   output$variable <- renderUI({
@@ -169,45 +295,35 @@ function(input, output, session) {
                 selected = files()[1])
   })
   
-  # renderPlots ==========
-  output$plot1 <- renderPlot({
-    if(data() |> nrow() > 0){
-      lattice::xyplot(value ~ Time | variable,
-                      group = Instrument,
-                      data = data(),
-                      scales = 'free',
-                      type = 'b',
-                      layout = c(1, length(input$variables)),
-                      auto.key = list(space = "bottom"))}
-    else{.missing()}
-  })
+  # renderPlots DIA-NN ==========
+ 
   
-  output$table <- renderDataTable({ data() })
+  output$tableDIANN <- renderDataTable({ data() })
+  
+  output$tableComet <-  DT::renderDataTable({ cometData()  })
   
   output$plotiRTDDAChromatograms <- renderPlot({
     iRTprofileRawDDA() |> plot(main=gsub(rootdir(), "", input$file))
-    
   })
   
+  
   output$plotDDAiRTprofiles <- renderPlot({
-    par(mfrow = c(2, 6), mar=c(4,4,4,1))
-    rtFittedAPEX <- iRTprofileRawDDA() |>
-      rawrr:::pickPeak.rawrrChromatogram() |>
-      rawrr:::fitPeak.rawrrChromatogram() |>
+    par(mfrow = c(2, 6), mar = c(4, 4, 4, 1))
+    
+    rtFittedAPEX <- rtFittedAPEX() |>
       lapply(function(x){
-        plot(x$times, x$intensities, type='p',
-             ylim=range(c(x$intensities,x$yp)),
-             main=x$mass); lines(x$xx, x$yp,
-                                 col='red'); x}) |>
-      sapply(function(x){x$xx[which.max(x$yp)[1]]})
+        plot(x$times, x$intensities,
+             type='p',
+             ylim = range(c(x$intensities,x$yp)),
+             main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
+        
+        lines(x$xx, x$yp, col='red'); x})
   })
   
   output$plotDDAiRTfits <- renderPlot({
     iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26, 54.62, 100)
     
-    rtFittedAPEX <- iRTprofileRawDDA() |>
-      rawrr:::pickPeak.rawrrChromatogram() |>
-      rawrr:::fitPeak.rawrrChromatogram() |>
+    rtFittedAPEX <- rtFittedAPEX() |>
       sapply(function(x){x$xx[which.max(x$yp)[1]]})
     
     fit <- lm(rtFittedAPEX ~ iRTscore)
@@ -223,10 +339,10 @@ function(input, output, session) {
                                      format(coef(fit)[2], digits = 2), "score",
                                      "\nR2: ", format(summary(fit)$r.squared, digits = 4)),
            bty = "n", cex = 0.75)
-    #text(iRTscore, rt, iRTmz, pos=1,cex=0.5)
+    text(iRTscore, rtFittedAPEX, names(iRTmz()), pos = 4,cex = 0.5)
   })
   
- 
+  
   output$plotDIAiRTprofiles <- renderPlot({
     rtFittedAPEX <- iRTprofileRawDDA() |>
       rawrr:::pickPeak.rawrrChromatogram() |>
@@ -243,5 +359,33 @@ function(input, output, session) {
     #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
   })
   output$plotTIC <- renderPlot({ .tic(input$file) })
-
+  
+  output$diannPlot <- renderPlot({
+    if(data() |> nrow() > 0){
+      lattice::xyplot(value ~ Time | variable * Instrument,
+                      group = Instrument,
+                      data = data(),
+                      scales = 'free',
+                      type = 'b',
+                      #layout = c(1, length(input$variables)),
+                      auto.key = list(space = "bottom"))}
+    else{.missing()}
+  })
+  
+  # renderPlots COMET ==========
+  output$cometPlot <- renderPlot({
+    if(cometData() |> nrow() > 0){
+      lattice::xyplot(value ~ Time | variable * instrument,
+                      group = scanType,
+                      data = cometData(),
+                      scales = 'free',
+                      type = 'b',
+                      pch = 16,
+                      #layout = c(1, length(input$variables)),
+                      auto.key = list(space = "bottom"))
+    }
+    else{.missing()}
+  })
+  
+  
 }

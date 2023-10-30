@@ -8,11 +8,17 @@ dashboardPage(
     sidebarMenu(
       menuItem("DIA-NN stat", tabName = "diannplots", icon = icon("chart-line")),
       menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
+      menuItem("comet stat", tabName = "cometplots", icon = icon("chart-line")),
+      menuItem("comet stat data", tabName = "cometdata", icon = icon("table")),
       menuItem("iRT profiles", tabName = "iRTprofiles", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
-      htmlOutput("variable"),
-      htmlOutput("file")
+      htmlOutput("file"),
+      selectInput('regex', 'file regex',
+                  c(".*", ".*raw$", ".*autoQC.*dia.*raw$", ".*autoQC.*dda.*raw$", "*.zip"),
+                  multiple = FALSE,
+                  selected = ".*raw$")
+      
       ),
     br(),
     a(img(src="https://img.shields.io/badge/JIB-10.1515%2Fjib.2022.0031-brightgreen"),
@@ -30,21 +36,27 @@ dashboardPage(
     tabItems(
       # First tab content
       tabItem(tabName = "diannplots",
-              fluidRow(
-                sliderInput("days", "Observation range in days:", min = 0, max = 365, value = c(0, 28), width = 1000),
-                selectInput('regex', 'file regex',
-                            c(".*", ".*raw$", ".*autoQC.*dia.*raw$", ".*autoQC.*dda.*raw$", "*.zip"),
-                            multiple = FALSE,
-                            selected = ".*raw$"),
-                box(plotOutput("plot1", height = 500, width = 1000))
-                
-              )
+              htmlOutput("variable"),
+              fluidRow(htmlOutput("diannTimeSlider")),
+              fluidRow(box(plotOutput("diannPlot", height = 500, width = 1000)))
       ),
       # Second tab content
       tabItem(tabName = "dianndata",
               fluidRow(
                 h2("DIA-NN stat.tsv"),
-                dataTableOutput('table')
+                dataTableOutput('tableDIANN')
+              )
+      ),
+      tabItem(tabName = "cometplots",
+              
+              fluidRow(htmlOutput("cometVariable")),
+              fluidRow(htmlOutput("cometTimeSlider")),
+              fluidRow(box(plotOutput("cometPlot", height = 500, width = 1000)))
+      ),
+      tabItem(tabName = "cometdata",
+              fluidRow(
+                h2("comet RData"),
+                fluidRow(DT::dataTableOutput('tableComet'))
               )
       ),
       tabItem(tabName = "iRTprofiles",
