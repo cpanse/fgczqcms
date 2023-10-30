@@ -4,6 +4,31 @@
 # requirements ===========
 stopifnot(require(readr), require(reshape2), require(shinydashboard))
 
+.plotChromatogramSet <- function (x, diagnostic = FALSE, ...) 
+{
+  stopifnot(attr(x, "class") == "rawrrChromatogramSet")
+  if (attr(x, "type") == "xic") {
+    plot(0, 0, type = "n", frame.plot = FALSE, xlab = "Retention Time [min]", 
+         ylab = "Intensities", ylim = range(unlist(lapply(x, function(o) {
+           o$intensities
+         }))), ...)
+    cm <- hcl.colors(length(x), "Set 2")
+    mapply(function(o, co) {
+      lines(o$times, o$intensities, col = co)
+    }, x, cm)
+    legend("topleft", as.character(sapply(x, function(o) {
+      o$mass
+    })), col = cm, pch = 16, title = "target mass [m/z]", 
+    bty = "n", cex = 0.75)
+    if (diagnostic) {
+      legend("topright", legend = paste(c("File: ", "Filter: ", 
+                                          "Type: ", "Tolerance: "), c(basename(attr(x, 
+                                                                                    "file")), attr(x, "filter"), attr(x, "type"), 
+                                                                      attr(x, "tol"))), bty = "n", cex = 0.75, text.col = "black")
+    }
+  }
+  invisible(x)
+}
 
 # utils ===========
 .assignInstrument <- function(x){
@@ -72,7 +97,7 @@ function(input, output, session) {
                                        Proteins.Identified = col_integer()), 
                       trim_ws = TRUE) 
     
-   
+    S <- S[grepl(input$regex, S$File.Name), ]
     
     S$Instrument <- NA
     S |> .assignInstrument()
@@ -155,7 +180,6 @@ function(input, output, session) {
                       layout = c(1, length(input$variables)),
                       auto.key = list(space = "bottom"))}
     else{.missing()}
-    
   })
   
   output$table <- renderDataTable({ data() })
@@ -165,7 +189,7 @@ function(input, output, session) {
     
   })
   
-  output$plotiRTprofiles <- renderPlot({
+  output$plotDDAiRTprofiles <- renderPlot({
     par(mfrow = c(2, 6), mar=c(4,4,4,1))
     rtFittedAPEX <- iRTprofileRawDDA() |>
       rawrr:::pickPeak.rawrrChromatogram() |>
@@ -178,7 +202,7 @@ function(input, output, session) {
       sapply(function(x){x$xx[which.max(x$yp)[1]]})
   })
   
-  output$plotiRTfits <- renderPlot({
+  output$plotDDAiRTfits <- renderPlot({
     iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26, 54.62, 100)
     
     rtFittedAPEX <- iRTprofileRawDDA() |>
@@ -203,6 +227,21 @@ function(input, output, session) {
   })
   
  
+  output$plotDIAiRTprofiles <- renderPlot({
+    rtFittedAPEX <- iRTprofileRawDDA() |>
+      rawrr:::pickPeak.rawrrChromatogram() |>
+      rawrr:::fitPeak.rawrrChromatogram() |>
+      sapply(function(x){x$xx[which.max(x$yp)[1]]})
+    
+    par(mfrow = c(2, 6), mar=c(4,4,4,1))
+    
+    rtFittedAPEX |> lapply(function(x){
+      .plotChromatogramSet(iRTprofileRawDIA(),
+                           xlim = c(x - 0.1, x + 0.1))})
+    
+    #profileRawDIA <- iRTprofileRawDIA()
+    #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
+  })
   output$plotTIC <- renderPlot({ .tic(input$file) })
 
 }

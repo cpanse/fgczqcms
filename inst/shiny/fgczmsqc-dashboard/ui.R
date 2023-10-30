@@ -12,7 +12,8 @@ dashboardPage(
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
       htmlOutput("variable"),
-      htmlOutput("file")),
+      htmlOutput("file")
+      ),
     br(),
     a(img(src="https://img.shields.io/badge/JIB-10.1515%2Fjib.2022.0031-brightgreen"),
       href='https://www.degruyter.com/document/doi/10.1515/jib-2022-0031/html'),
@@ -31,7 +32,12 @@ dashboardPage(
       tabItem(tabName = "diannplots",
               fluidRow(
                 sliderInput("days", "Observation range in days:", min = 0, max = 365, value = c(0, 28), width = 1000),
+                selectInput('regex', 'file regex',
+                            c(".*", ".*raw$", ".*autoQC.*dia.*raw$", ".*autoQC.*dda.*raw$", "*.zip"),
+                            multiple = FALSE,
+                            selected = ".*raw$"),
                 box(plotOutput("plot1", height = 500, width = 1000))
+                
               )
       ),
       # Second tab content
@@ -48,13 +54,18 @@ dashboardPage(
                 
               ),
               fluidRow(
-                box(plotOutput("plotiRTfits", height = 300, width = 300))
+                box(plotOutput("plotDDAiRTfits", height = 300, width = 300))
               ),
               fluidRow(
                
-                  box(plotOutput("plotiRTprofiles", height = 400, width = 1000))
+                  box(plotOutput("plotDDAiRTprofiles", height = 400, width = 1000))
                 
               ),
+              #fluidRow(
+              #  
+              #  box(plotOutput("plotDIAiRTprofiles", height = 400, width = 1000))
+              #  
+              #),
               fluidRow(radioButtons("ppmError", "ppmError",
                                     choices = c(10, 15, 20, 100),
                                     selected = 10,
