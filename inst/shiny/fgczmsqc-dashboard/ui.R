@@ -19,7 +19,10 @@ dashboardPage(
     a(img(src="https://img.shields.io/badge/JPR-10.1021%2Facs.jproteome.0c00866-brightgreen"),
       href='http://dx.doi.org/10.1021/acs.jproteome.0c00866'),
     a(img(src="https://img.shields.io/badge/git-proteomics/fgczmsqc-pink"),
-      href='https://gitlab.bfabric.org/proteomics/qc/-/tree/main/inst/shiny/fgczmsqc-dashboard?ref_type=heads')
+      href='https://gitlab.bfabric.org/proteomics/qc/-/tree/main/inst/shiny/fgczmsqc-dashboard?ref_type=heads'),
+    br(),
+    HTML("tested on"),
+    img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px')
   ),
   dashboardBody(
     # Boxes need to be put in a row (or column)
