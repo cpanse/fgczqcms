@@ -60,30 +60,22 @@ dashboardPage(
               )
       ),
       tabItem(tabName = "iRTprofiles",
-              fluidRow(
-                box(plotOutput("plotiRTDDAChromatograms", height = 300, width = 1000)
-                )
+              fluidRow(box(plotOutput("plotiRTDDAChromatograms",
+                                      height = 300, width = 1000))
                 
               ),
+              fluidRow(box(plotOutput("plotDDAiRTfits", height = 300, width = 300))),
               fluidRow(
-                box(plotOutput("plotDDAiRTfits", height = 300, width = 300))
-              ),
-              fluidRow(
-               
                   box(plotOutput("plotDDAiRTprofiles", height = 400, width = 1000))
                 
               ),
-              #fluidRow(
-              #  
-              #  box(plotOutput("plotDIAiRTprofiles", height = 400, width = 1000))
-              #  
-              #),
               fluidRow(radioButtons("ppmError", "ppmError",
                                     choices = c(10, 15, 20, 100),
                                     selected = 10,
                                     inline = TRUE,
                                     width = NULL
               ))
+              
       ),
       tabItem(tabName = "tic",
               fluidRow(
@@ -91,7 +83,8 @@ dashboardPage(
                 fluidRow(
                   box(plotOutput("plotTIC", height = 400, width = 1000))
                 )
-              ))
+              )
+      )
     )
   )
 )
