@@ -43,7 +43,8 @@ stopifnot(require(readr), require(reshape2), require(shinydashboard))
 
 .tic <- function(f){
   message(f)
-  rawrr::readChromatogram(f, type='tic') |>
+  f |>
+    rawrr::readChromatogram( type='tic') |>
     plot()
 }
 
@@ -73,7 +74,9 @@ function(input, output, session) {
     progress$set(message = "Reading iRT peptide profiles ...")
     on.exit(progress$close())
     
-    rawrr::readChromatogram(input$file, mass = iRTmz(), tol = as.integer(input$ppmError), type = "xic", filter = "ms") 
+    file.path(rootdirraw(), input$file) |>
+      rawrr::readChromatogram(mass = iRTmz(), tol = as.integer(input$ppmError),
+                              type = "xic", filter = "ms") 
   })
   
   rtFittedAPEX <- reactive({
@@ -102,7 +105,7 @@ function(input, output, session) {
         y[seq(1, length(y) - 1)]
       }) |> unlist()
     
-    input$file |>
+    file.path(rootdirraww, input$file) |>
       rawrr::readChromatogram(mass = yIonSeries, tol = 15, type = "xic", filter = "ms2") 
   })
   
@@ -227,9 +230,8 @@ function(input, output, session) {
     c(data()$File.Name[data()$Instrument %in% input$instrument],
       comet()$filename.y[comet()$instrument %in% input$instrument]) |>
       unique() |>
-      lapply(function(f){file.path(rootdirraw(), f)}) |>
       lapply(function(f){
-        if(file.exists(f)){return(f)}
+        if(file.exists(file.path(rootdirraw(), f))){return(f)}
         else{
           # msg <- paste0("Can not find file ", f)
           # message(msg)
@@ -358,7 +360,7 @@ function(input, output, session) {
     #profileRawDIA <- iRTprofileRawDIA()
     #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
   })
-  output$plotTIC <- renderPlot({ .tic(input$file) })
+  output$plotTIC <- renderPlot({ .tic(file.path(rootdirraw(), input$file)) })
   
   output$diannPlot <- renderPlot({
     if(data() |> nrow() > 0){
