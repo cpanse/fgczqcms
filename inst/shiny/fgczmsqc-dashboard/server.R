@@ -162,7 +162,8 @@ function(input, output, session) {
   ########### diann -----------
   wide <- reactive({
     S <- rootdir() |> 
-      file.path("output.txt") |> readr::read_delim(
+      file.path("output.txt") |>
+      readr::read_delim(
         delim = ";",
         escape_double = FALSE,
         col_types = cols(Time = col_datetime(format = "%s"),
@@ -211,7 +212,7 @@ function(input, output, session) {
   })
   
   rootdirraw <- reactive({
-    cands <- c("/srv/www/htdocs/", "/scratch/DIAQC/qc/dump")
+    cands <- c("/srv/www/htdocs/", "/scratch/DIAQC/qc/dump", "/Users/cp/Downloads/dump/")
     for (d in cands){
       if (dir.exists(d))return(d)
     }
@@ -226,7 +227,7 @@ function(input, output, session) {
     c(data()$File.Name[data()$Instrument %in% input$instrument],
       comet()$filename.y[comet()$instrument %in% input$instrument]) |>
       unique() |>
-      lapply(function(f){file.path(rootdir(), f)}) |>
+      lapply(function(f){file.path(rootdirraw(), f)}) |>
       lapply(function(f){
         if(file.exists(f)){return(f)}
         else{
@@ -296,14 +297,13 @@ function(input, output, session) {
   })
   
   # renderPlots DIA-NN ==========
- 
-  
   output$tableDIANN <- renderDataTable({ data() })
   
   output$tableComet <-  DT::renderDataTable({ cometData()  })
   
   output$plotiRTDDAChromatograms <- renderPlot({
-    iRTprofileRawDDA() |> plot(main=gsub(rootdir(), "", input$file))
+    iRTprofileRawDDA() |>
+      plot(main=gsub(rootdirraw(), "", input$file))
   })
   
   
