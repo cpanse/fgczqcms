@@ -437,6 +437,10 @@ function(input, output, session) {
                       group = scanType,
                       data = cometData(),
                       scales = 'free',
+                      panel = function(x,y,...){
+                        panel.abline(h = quantile(y, c(0.05, 0.25,0.5,0.75,0.9)), col='grey', lwd=c(1,2,3,2,1))
+                        panel.xyplot(x, y, ...)
+                      },
                       type = 'b',
                       pch = 16,
                       #layout = c(1, length(input$variables)),
