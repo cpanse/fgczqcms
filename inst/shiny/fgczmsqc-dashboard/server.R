@@ -69,14 +69,55 @@ function(input, output, session) {
     iRTmz
   })
   
+  #### iRTprofileRawDDA --------------
   iRTprofileRawDDA <- reactive({
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reading iRT peptide profiles ...")
     on.exit(progress$close())
     
     file.path(rootdirraw(), input$file) |>
-      rawrr::readChromatogram(mass = iRTmz(), tol = as.integer(input$ppmError),
-                              type = "xic", filter = "ms") 
+      rawrr::readChromatogram(mass = iRTmz(),
+                              tol = as.integer(input$ppmError),
+                              type = "xic",
+                              filter = "ms") 
+  })
+
+  #### iRTprofileRawDIA --------------
+  iRTprofileRawDIA <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading Ms2 profiles ...")
+    on.exit(progress$close())
+    
+    yIonSeries <- ("ELVIS" |> 
+        protViz::fragmentIon())[[1]]['y'] |>
+        unlist() 
+    
+    
+    yIonSeries <- (input$iRTpeptide |> 
+      protViz::fragmentIon())[[1]]['y'] |>
+        unlist() 
+    
+    print(yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)])
+    
+    file.path(rootdirraw(), input$file) |>
+     rawrr::readChromatogram(mass = yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)],
+                              tol = as.integer(input$ppmError),
+                              type = "xic",
+                              filter = input$scanType) 
+  })
+  
+  
+  scanType <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading scanTypes of raw file ...")
+    on.exit(progress$close())
+    
+    file.path(rootdirraw(), input$file) |>
+      rawrr::readIndex() -> idx
+    
+    idx$scanType |> 
+      unique() |>
+      sort() 
   })
   
   rtFittedAPEX <- reactive({
@@ -89,25 +130,6 @@ function(input, output, session) {
       rawrr:::fitPeak.rawrrChromatogram()
   })
   
-  iRTprofileRawDIA <- reactive({
-    #plot(0, 0, sub=f, type = 'n', xlab='', ylab=''); text(0,0, "t.b.d", cex=5)
-    iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384, 683.8282,
-               683.8541, 699.3388, 726.8361, 776.9301)
-    
-    names(iRTmz) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
-                      "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
-                      "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
-                      "LFLQFGAQGSPFLK")
-    
-    yIonSeries <- names(iRTmz)[9] |>
-      lapply(function(x){
-        y <- protViz::fragmentIon(x)[[1]]$y
-        y[seq(1, length(y) - 1)]
-      }) |> unlist()
-    
-    file.path(rootdirraww, input$file) |>
-      rawrr::readChromatogram(mass = yIonSeries, tol = 15, type = "xic", filter = "ms2") 
-  })
   
   ###### comet --------
   comet <- reactive({
@@ -242,37 +264,17 @@ function(input, output, session) {
   })
   
   #  renderUIs =============
-  
-  #### cometVariable ------------
-  output$cometVariable <- renderUI({
-    
-    defaulVariables <- c('nMS2')
-    
-    selectInput('cometVariables', 'Variables',
-                cometVariables(),
-                multiple = FALSE,
-                selected = defaulVariables)
-    
-  })
-  
-  output$cometTimeSlider <- renderUI({
-    mintime <- min(cometLong()$Time)
-    now <- Sys.time()
-    sliderInput("cometDays", "Observation range in days:", min = 0,
-                max = difftime(now, mintime, units = 'days') |>
-                  round() |> as.integer(),
-                value = c(0, 28), width = 1000)
-  })
-  
-  
   output$diannTimeSlider <- renderUI({
     mintime <- min(long()$Time)
     now <- Sys.time()
     
+    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
+              round() |>
+              as.integer())
+    
     sliderInput("diannDays", "Observation range in days:", min = 0,
-                max = difftime(now, mintime, units = 'days') |>
-                  round() |> as.integer(),
-                value = c(0, 28), width = 1000)
+                max = maxtime,
+                value = c(0, min(28, maxtime)), width = 1000)
   })
   
   
@@ -281,6 +283,24 @@ function(input, output, session) {
                 instruments(),
                 multiple = TRUE,
                 selected = instruments()[1])
+  })
+  
+  output$scanType <- renderUI({
+    if(input$plotDiannMs2){
+      list( selectInput('scanType', 'scanType',
+                        scanType(),
+                        multiple = FALSE,
+                        selected = scanType()[1]),
+            selectInput('iRTpeptide', 'iRTpeptide',
+                        names(iRTmz()),
+                        multiple = FALSE,
+                        selected = names(iRTmz())[1]),
+            sliderInput("rtSlider", "rtSlider", min = 0,
+                        max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
+                        value = c(26,29), width = 1000))
+    }else{
+      shiny::renderText("set off")
+    }
   })
   
   output$variable <- renderUI({
@@ -298,16 +318,31 @@ function(input, output, session) {
                 selected = files()[1])
   })
   
-  # renderPlots DIA-NN ==========
+  #### renderPlots DIA-NN -------------
   output$tableDIANN <- renderDataTable({ data() })
   
   output$tableComet <-  DT::renderDataTable({ cometData()  })
   
   output$plotiRTDDAChromatograms <- renderPlot({
     iRTprofileRawDDA() |>
-      plot(main=gsub(rootdirraw(), "", input$file))
+      plot(main = input$file)
   })
   
+  
+  #### plotDIAiRTprofiles  ------------
+  output$plotDIAiRTprofiles <- renderPlot({
+    if(input$plotDiannMs2){
+      
+      message("calling iRTprofileRawDIA()  ...")
+      
+      
+      iRTprofileRawDIA()  |>
+        .plotChromatogramSet(, xlim=input$rtSlider)
+      
+    }else{
+      shiny::renderText("set off")
+    }
+  })
   
   output$plotDDAiRTprofiles <- renderPlot({
     par(mfrow = c(2, 6), mar = c(4, 4, 4, 1))
@@ -345,23 +380,19 @@ function(input, output, session) {
   })
   
   
-  output$plotDIAiRTprofiles <- renderPlot({
-    rtFittedAPEX <- iRTprofileRawDDA() |>
-      rawrr:::pickPeak.rawrrChromatogram() |>
-      rawrr:::fitPeak.rawrrChromatogram() |>
-      sapply(function(x){x$xx[which.max(x$yp)[1]]})
-    
-    par(mfrow = c(2, 6), mar=c(4,4,4,1))
-    
-    rtFittedAPEX |> lapply(function(x){
-      .plotChromatogramSet(iRTprofileRawDIA(),
-                           xlim = c(x - 0.1, x + 0.1))})
-    
-    #profileRawDIA <- iRTprofileRawDIA()
-    #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
+  output$iRTpeptides <- renderUI({
+    if(input$plotDiannMs2){
+      selectInput('iRTpeptides', 'iRTpeptides',
+                  files(),
+                  multiple = FALSE,
+                  selected = iRTpeptides()[1])
+    }
   })
+  
+
   output$plotTIC <- renderPlot({ .tic(file.path(rootdirraw(), input$file)) })
   
+  #### DIA-NN lattice::xyplot -----------------
   output$diannPlot <- renderPlot({
     if(data() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * Instrument,
@@ -374,7 +405,32 @@ function(input, output, session) {
     else{.missing()}
   })
   
-  # renderPlots COMET ==========
+  #### cometVariable ------------
+  output$cometVariable <- renderUI({
+    
+    defaulVariables <- c('nMS2')
+    
+    selectInput('cometVariables', 'Variables',
+                cometVariables(),
+                multiple = FALSE,
+                selected = defaulVariables)
+    
+  })
+  
+  #### comet time slider -----------------
+  output$cometTimeSlider <- renderUI({
+    mintime <- min(cometLong()$Time)
+    now <- Sys.time()
+    
+    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
+                  round() |>
+                  as.integer())
+    
+    sliderInput("cometDays", "Observation range in days:", min = 0,
+                max = maxtime,
+                value = c(0, min(maxtime, 28)), width = 1000)
+  })
+  #### comet lattice::xyplot -----------------
   output$cometPlot <- renderPlot({
     if(cometData() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * instrument,
