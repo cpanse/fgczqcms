@@ -48,7 +48,6 @@ dashboardPage(
               )
       ),
       tabItem(tabName = "cometplots",
-              
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
               fluidRow(box(plotOutput("cometPlot", height = 500, width = 1000)))
@@ -61,21 +60,17 @@ dashboardPage(
       ),
       tabItem(tabName = "iRTprofiles",
               fluidRow(box(plotOutput("plotiRTDDAChromatograms",
-                                      height = 300, width = 1000))
-                
-              ),
+                                      height = 300, width = 1000))),
               fluidRow(box(plotOutput("plotDDAiRTfits", height = 300, width = 300))),
-              fluidRow(
-                  box(plotOutput("plotDDAiRTprofiles", height = 400, width = 1000))
-                
-              ),
+              fluidRow(box(plotOutput("plotDDAiRTprofiles", height = 400, width = 1000))),
               fluidRow(radioButtons("ppmError", "ppmError",
                                     choices = c(10, 15, 20, 100),
                                     selected = 10,
                                     inline = TRUE,
-                                    width = NULL
-              ))
-              
+                                    width = NULL)),
+              checkboxInput("plotDiannMs2", "analyse ms2 profiles", value = FALSE, width = NULL),
+              fluidRow(htmlOutput("scanType")),
+              fluidRow(plotOutput("plotDIAiRTprofiles", height = 400, width = 1000))
       ),
       tabItem(tabName = "tic",
               fluidRow(

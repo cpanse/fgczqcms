@@ -79,6 +79,19 @@ function(input, output, session) {
                               type = "xic", filter = "ms") 
   })
   
+  scanType <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading scanTypes of raw file ...")
+    on.exit(progress$close())
+    
+    file.path(rootdirraw(), input$file) |>
+      rawrr::readIndex() -> idx
+    
+    idx$scanType |> 
+      unique() |>
+      sort() 
+  })
+  
   rtFittedAPEX <- reactive({
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Fitting iRT APEXs ...")
@@ -99,14 +112,15 @@ function(input, output, session) {
                       "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
                       "LFLQFGAQGSPFLK")
     
-    yIonSeries <- names(iRTmz)[9] |>
+    yIonSeries <- names(iRTmz) |>
       lapply(function(x){
         y <- protViz::fragmentIon(x)[[1]]$y
         y[seq(1, length(y) - 1)]
       }) |> unlist()
     
-    file.path(rootdirraww, input$file) |>
-      rawrr::readChromatogram(mass = yIonSeries, tol = 15, type = "xic", filter = "ms2") 
+    file.path(rootdirraw(), input$file) |>
+      rawrr::readChromatogram(mass = yIonSeries, tol = input$ppmError, type = "xic",
+                              filter = input$scanType) 
   })
   
   ###### comet --------
@@ -242,37 +256,17 @@ function(input, output, session) {
   })
   
   #  renderUIs =============
-  
-  #### cometVariable ------------
-  output$cometVariable <- renderUI({
-    
-    defaulVariables <- c('nMS2')
-    
-    selectInput('cometVariables', 'Variables',
-                cometVariables(),
-                multiple = FALSE,
-                selected = defaulVariables)
-    
-  })
-  
-  output$cometTimeSlider <- renderUI({
-    mintime <- min(cometLong()$Time)
-    now <- Sys.time()
-    sliderInput("cometDays", "Observation range in days:", min = 0,
-                max = difftime(now, mintime, units = 'days') |>
-                  round() |> as.integer(),
-                value = c(0, 28), width = 1000)
-  })
-  
-  
   output$diannTimeSlider <- renderUI({
     mintime <- min(long()$Time)
     now <- Sys.time()
     
+    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
+              round() |>
+              as.integer())
+    
     sliderInput("diannDays", "Observation range in days:", min = 0,
-                max = difftime(now, mintime, units = 'days') |>
-                  round() |> as.integer(),
-                value = c(0, 28), width = 1000)
+                max = maxtime,
+                value = c(0, min(28, maxtime)), width = 1000)
   })
   
   
@@ -281,6 +275,17 @@ function(input, output, session) {
                 instruments(),
                 multiple = TRUE,
                 selected = instruments()[1])
+  })
+  
+  output$scanType <- renderUI({
+    if(input$plotDiannMs2){
+      selectInput('scanType', 'scanType',
+                  scanType(),
+                  multiple = FALSE,
+                  selected = scanType()[1])
+    }else{
+      shiny::renderText("set off")
+    }
   })
   
   output$variable <- renderUI({
@@ -298,7 +303,7 @@ function(input, output, session) {
                 selected = files()[1])
   })
   
-  # renderPlots DIA-NN ==========
+  #### renderPlots DIA-NN -------------
   output$tableDIANN <- renderDataTable({ data() })
   
   output$tableComet <-  DT::renderDataTable({ cometData()  })
@@ -346,22 +351,29 @@ function(input, output, session) {
   
   
   output$plotDIAiRTprofiles <- renderPlot({
-    rtFittedAPEX <- iRTprofileRawDDA() |>
-      rawrr:::pickPeak.rawrrChromatogram() |>
-      rawrr:::fitPeak.rawrrChromatogram() |>
-      sapply(function(x){x$xx[which.max(x$yp)[1]]})
-    
-    par(mfrow = c(2, 6), mar=c(4,4,4,1))
-    
-    rtFittedAPEX |> lapply(function(x){
-      .plotChromatogramSet(iRTprofileRawDIA(),
-                           xlim = c(x - 0.1, x + 0.1))})
-    
-    #profileRawDIA <- iRTprofileRawDIA()
-    #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
+    if(input$plotDiannMs2){
+      rtFittedAPEX <- iRTprofileRawDDA() |>
+        rawrr:::pickPeak.rawrrChromatogramkPeak.rawrrChromatogram() |>
+        rawrr:::fitPeak.rawrrChromatogram() |>
+        sapply(function(x){x$xx[which.max(x$yp)[1]]})
+      
+      par(mfrow = c(1, 1), mar=c(4,4,4,1))
+      iRTprofileRawDIA() |> plot() 
+      #rtFittedAPEX |> plot() 
+      
+      #lapply(function(x){
+      #.plotChromatogramSet(iRTprofileRawDIA(),
+      #                     xlim = c(x - 0.1, x + 0.1))})
+      
+      #profileRawDIA <- iRTprofileRawDIA()
+      #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
+    }else{
+      shiny::renderText("set off")
+    }
   })
   output$plotTIC <- renderPlot({ .tic(file.path(rootdirraw(), input$file)) })
   
+  #### DIA-NN lattice::xyplot -----------------
   output$diannPlot <- renderPlot({
     if(data() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * Instrument,
@@ -374,7 +386,30 @@ function(input, output, session) {
     else{.missing()}
   })
   
-  # renderPlots COMET ==========
+  #### cometVariable ------------
+  output$cometVariable <- renderUI({
+    
+    defaulVariables <- c('nMS2')
+    
+    selectInput('cometVariables', 'Variables',
+                cometVariables(),
+                multiple = FALSE,
+                selected = defaulVariables)
+    
+  })
+  
+  #### comet time slider -----------------
+  output$cometTimeSlider <- renderUI({
+    mintime <- min(cometLong()$Time)
+    now <- Sys.time()
+    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
+                  round() |>
+                  as.integer())
+    sliderInput("cometDays", "Observation range in days:", min = 0,
+                max = maxtime,
+                value = c(0, min(max, 28)), width = 1000)
+  })
+  #### comet lattice::xyplot -----------------
   output$cometPlot <- renderPlot({
     if(cometData() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * instrument,
