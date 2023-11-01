@@ -69,15 +69,43 @@ function(input, output, session) {
     iRTmz
   })
   
+  #### iRTprofileRawDDA --------------
   iRTprofileRawDDA <- reactive({
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reading iRT peptide profiles ...")
     on.exit(progress$close())
     
     file.path(rootdirraw(), input$file) |>
-      rawrr::readChromatogram(mass = iRTmz(), tol = as.integer(input$ppmError),
-                              type = "xic", filter = "ms") 
+      rawrr::readChromatogram(mass = iRTmz(),
+                              tol = as.integer(input$ppmError),
+                              type = "xic",
+                              filter = "ms") 
   })
+
+  #### iRTprofileRawDIA --------------
+  iRTprofileRawDIA <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading Ms2 profiles ...")
+    on.exit(progress$close())
+    
+    yIonSeries <- ("ELVIS" |> 
+        protViz::fragmentIon())[[1]]['y'] |>
+        unlist() 
+    
+    
+    yIonSeries <- (input$iRTpeptide |> 
+      protViz::fragmentIon())[[1]]['y'] |>
+        unlist() 
+    
+    print(yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)])
+    
+    file.path(rootdirraw(), input$file) |>
+     rawrr::readChromatogram(mass = yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)],
+                              tol = as.integer(input$ppmError),
+                              type = "xic",
+                              filter = input$scanType) 
+  })
+  
   
   scanType <- reactive({
     progress <- shiny::Progress$new(session = session)
@@ -102,26 +130,6 @@ function(input, output, session) {
       rawrr:::fitPeak.rawrrChromatogram()
   })
   
-  iRTprofileRawDIA <- reactive({
-    #plot(0, 0, sub=f, type = 'n', xlab='', ylab=''); text(0,0, "t.b.d", cex=5)
-    iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384, 683.8282,
-               683.8541, 699.3388, 726.8361, 776.9301)
-    
-    names(iRTmz) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
-                      "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
-                      "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
-                      "LFLQFGAQGSPFLK")
-    
-    yIonSeries <- names(iRTmz) |>
-      lapply(function(x){
-        y <- protViz::fragmentIon(x)[[1]]$y
-        y[seq(1, length(y) - 1)]
-      }) |> unlist()
-    
-    file.path(rootdirraw(), input$file) |>
-      rawrr::readChromatogram(mass = yIonSeries, tol = input$ppmError, type = "xic",
-                              filter = input$scanType) 
-  })
   
   ###### comet --------
   comet <- reactive({
@@ -279,10 +287,17 @@ function(input, output, session) {
   
   output$scanType <- renderUI({
     if(input$plotDiannMs2){
-      selectInput('scanType', 'scanType',
-                  scanType(),
-                  multiple = FALSE,
-                  selected = scanType()[1])
+      list( selectInput('scanType', 'scanType',
+                        scanType(),
+                        multiple = FALSE,
+                        selected = scanType()[1]),
+            selectInput('iRTpeptide', 'iRTpeptide',
+                        names(iRTmz()),
+                        multiple = FALSE,
+                        selected = names(iRTmz())[1]),
+            sliderInput("rtSlider", "rtSlider", min = 0,
+                        max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
+                        value = c(26,29), width = 1000))
     }else{
       shiny::renderText("set off")
     }
@@ -310,9 +325,24 @@ function(input, output, session) {
   
   output$plotiRTDDAChromatograms <- renderPlot({
     iRTprofileRawDDA() |>
-      plot(main=gsub(rootdirraw(), "", input$file))
+      plot(main = input$file)
   })
   
+  
+  #### plotDIAiRTprofiles  ------------
+  output$plotDIAiRTprofiles <- renderPlot({
+    if(input$plotDiannMs2){
+      
+      message("calling iRTprofileRawDIA()  ...")
+      
+      
+      iRTprofileRawDIA()  |>
+        .plotChromatogramSet(, xlim=input$rtSlider)
+      
+    }else{
+      shiny::renderText("set off")
+    }
+  })
   
   output$plotDDAiRTprofiles <- renderPlot({
     par(mfrow = c(2, 6), mar = c(4, 4, 4, 1))
@@ -350,27 +380,16 @@ function(input, output, session) {
   })
   
   
-  output$plotDIAiRTprofiles <- renderPlot({
+  output$iRTpeptides <- renderUI({
     if(input$plotDiannMs2){
-      rtFittedAPEX <- iRTprofileRawDDA() |>
-        rawrr:::pickPeak.rawrrChromatogramkPeak.rawrrChromatogram() |>
-        rawrr:::fitPeak.rawrrChromatogram() |>
-        sapply(function(x){x$xx[which.max(x$yp)[1]]})
-      
-      par(mfrow = c(1, 1), mar=c(4,4,4,1))
-      iRTprofileRawDIA() |> plot() 
-      #rtFittedAPEX |> plot() 
-      
-      #lapply(function(x){
-      #.plotChromatogramSet(iRTprofileRawDIA(),
-      #                     xlim = c(x - 0.1, x + 0.1))})
-      
-      #profileRawDIA <- iRTprofileRawDIA()
-      #save(rtFittedAPEX, profileRawDIA, file='/tmp/profileRawDIA.RData')
-    }else{
-      shiny::renderText("set off")
+      selectInput('iRTpeptides', 'iRTpeptides',
+                  files(),
+                  multiple = FALSE,
+                  selected = iRTpeptides()[1])
     }
   })
+  
+
   output$plotTIC <- renderPlot({ .tic(file.path(rootdirraw(), input$file)) })
   
   #### DIA-NN lattice::xyplot -----------------
@@ -402,12 +421,14 @@ function(input, output, session) {
   output$cometTimeSlider <- renderUI({
     mintime <- min(cometLong()$Time)
     now <- Sys.time()
+    
     maxtime <- (1 + difftime(now, mintime, units = 'days') |>
                   round() |>
                   as.integer())
+    
     sliderInput("cometDays", "Observation range in days:", min = 0,
                 max = maxtime,
-                value = c(0, min(max, 28)), width = 1000)
+                value = c(0, min(maxtime, 28)), width = 1000)
   })
   #### comet lattice::xyplot -----------------
   output$cometPlot <- renderPlot({
