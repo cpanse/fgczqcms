@@ -28,7 +28,8 @@ dashboardPage(
       href='https://gitlab.bfabric.org/proteomics/qc/-/tree/main/inst/shiny/fgczmsqc-dashboard?ref_type=heads'),
     br(),
     HTML("tested on"),
-    img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px')
+    img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px'),
+    sidebarMenu(menuItem("sessionInfo", tabName = "sessionInfo", icon = icon("laptop")))
   ),
   dashboardBody(
     # Boxes need to be put in a row (or column)
@@ -76,6 +77,14 @@ dashboardPage(
                 h2("Total ion count"),
                 fluidRow(
                   box(plotOutput("plotTIC", height = 400, width = 1000))
+                )
+              )
+      ),
+      tabItem(tabName = "sessionInfo",
+              fluidRow(
+                h2("session information"),
+                fluidRow(
+                  box(verbatimTextOutput("sessionInfo"), width = 800)
                 )
               )
       )

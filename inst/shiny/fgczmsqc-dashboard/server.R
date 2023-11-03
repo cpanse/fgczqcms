@@ -463,5 +463,11 @@ function(input, output, session) {
   },
   height = function(){400 * length(cometData()$instrument |> unique())})
   
+  #---- sessionInfo ----
+  
+  output$sessionInfo <- renderPrint({
+    capture.output(sessionInfo())
+  })
+  
   
 }
