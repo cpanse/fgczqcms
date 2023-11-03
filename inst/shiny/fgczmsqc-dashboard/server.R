@@ -5,9 +5,11 @@
 stopifnot(require(readr),
           require(reshape2),
           require(shinydashboard),
-          require(lattice))
+          require(lattice),
+          require(rawrr))
 
 #stopifnot(require(bfabricShiny))
+
 
 .plotChromatogramSet <- function (x, diagnostic = FALSE, ...) 
 {
@@ -44,6 +46,22 @@ stopifnot(require(readr),
   lattice::panel.xyplot(x, y, ...)
 }
 
+.iqrPanel <- function(x, y, ...){
+  q <- quantile(y, probs = c(0.25, 0.50, 0.75), na.rm = TRUE)
+  iqr <- q[3] - q[1]
+  lattice::panel.abline(h = c(q[3] + 1.5 * iqr, q[1] - 1.5 * iqr),
+                        col = 'lightgrey', lwd = 0.75)
+  lattice::panel.abline(h = q,
+                        col = c('grey', 'green', 'grey'), lwd = c(0.75, 2, 0.75))
+  
+  filter <- ((q[1] - 1.5 * iqr) < y & y < (q[3] + 1.5 * iqr))
+  idx <- order(x[filter])
+  
+  lattice::panel.xyplot(x[filter][idx], y[filter][idx], ..., type = 'b', pch=16)
+  lattice::panel.xyplot(x[!filter], y[!filter], ..., type = 'p', col='lightgrey')
+}
+
+
 .assignInstrument <- function(x){
   for (i in c('QEXACTIVE_1', 'LUMOS_1', 'LUMOS_2', 'EXPLORIS_1', 'EXPLORIS_2', 'FUSION_2')){
     idx <- grepl(i, x$File.Name) 
@@ -55,7 +73,7 @@ stopifnot(require(readr),
 .tic <- function(f){
   message(f)
   f |>
-    rawrr::readChromatogram( type='tic') |>
+    rawrr::readChromatogram(type='tic') |>
     plot()
 }
 
@@ -82,27 +100,32 @@ function(input, output, session) {
   
   #### iRTprofileRawDDA --------------
   iRTprofileRawDDA <- reactive({
+    shiny::req(input$file)
+    shiny::req(input$Ms1ppmError)
+    shiny::req(iRTmz())
+    
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reading iRT peptide profiles ...")
     on.exit(progress$close())
     
     file.path(rootdirraw(), input$file) |>
       rawrr::readChromatogram(mass = iRTmz(),
-                              tol = as.integer(input$ppmError),
-                              type = "xic",
-                              filter = "ms") 
+                            tol = as.integer(input$Ms1ppmError),
+                            type = "xic",
+                            filter = "ms")
   })
-
+  
   #### iRTprofileRawDIA --------------
   iRTprofileRawDIA <- reactive({
+    #shiny::req(input$file)
+    #shiny::req(input$iRTpeptide)
+    #shiny::req(input$scanType)
+    #shiny::req(input$Ms2ppmError)
+    
     progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Reading Ms2 profiles ...")
+    msg <- paste0("Reading Ms2 profiles for ", input$iRTpeptide, " ...")
+    progress$set(message = msg)
     on.exit(progress$close())
-    
-    yIonSeries <- ("ELVIS" |> 
-        protViz::fragmentIon())[[1]]['y'] |>
-        unlist() 
-    
     
     yIonSeries <- (input$iRTpeptide |> 
       protViz::fragmentIon())[[1]]['y'] |>
@@ -112,13 +135,15 @@ function(input, output, session) {
     
     file.path(rootdirraw(), input$file) |>
      rawrr::readChromatogram(mass = yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)],
-                              tol = as.integer(input$ppmError),
+                              tol = as.integer(input$Ms2ppmError),
                               type = "xic",
                               filter = input$scanType) 
   })
   
   
   scanType <- reactive({
+    shiny::req(input$file)
+    
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reading scanTypes of raw file ...")
     on.exit(progress$close())
@@ -297,22 +322,26 @@ function(input, output, session) {
                 selected = instruments()[1])
   })
   
-  output$scanType <- renderUI({
-    if(input$plotDiannMs2){
-      list( selectInput('scanType', 'scanType',
-                        scanType(),
-                        multiple = FALSE,
-                        selected = scanType()[1]),
-            selectInput('iRTpeptide', 'iRTpeptide',
-                        names(iRTmz()),
-                        multiple = FALSE,
-                        selected = names(iRTmz())[1]),
-            sliderInput("rtSlider", "rtSlider", min = 0,
-                        max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
-                        value = c(26,29), width = 1000))
-    }else{
-      shiny::renderText("set off")
-    }
+  output$scanTypeUI <- renderUI({
+    shiny::req(input$showIrtMS2Profile)
+    
+    list(radioButtons("Ms2ppmError", "Ms2 ppmError",
+                      choices = c(10, 20, 30, 50, 100),
+                      selected = 10,
+                      inline = TRUE,
+                      width = NULL),
+         selectInput('scanType', 'scanType',
+                      scanType(),
+                      multiple = FALSE,
+                      selected = scanType()[1]),
+          selectInput('iRTpeptide', 'iRTpeptide',
+                      names(iRTmz()),
+                      multiple = FALSE,
+                      selected = names(iRTmz())[1]),
+          sliderInput("rtSlider", "rtSlider", min = 0,
+                      max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
+                      value = c(26, 29), width = 1000))
+    
   })
   
   output$variable <- renderUI({
@@ -323,53 +352,95 @@ function(input, output, session) {
                 selected = defaulVariables)
   })
   
-  output$file <- renderUI({
-    selectInput('file', 'Files',
-                files(),
-                multiple = FALSE,
-                selected = files()[1])
+  output$fileInput <- renderUI({
+    L <- list(selectInput('file', 'Files',
+                          files(),
+                          multiple = FALSE,
+                          selected = files()[1]),
+              hr(),
+              checkboxInput("showRawFileHeader", "show Raw File Header", value = FALSE, width = NULL),
+              checkboxInput("showIrtMS1Profile", "show Irt Ms Profile", value = FALSE, width = NULL),
+              checkboxInput("showIrtMS2Profile", "show Irt Ms2 Profile" , value = FALSE, width = NULL),
+              hr())
+  
+  
+   return(L)
   })
   
+  output$fileOutput <- renderUI({
+    L <- list()
+    
+    if (input$showRawFileHeader){
+      L <- append(L, fluidRow(
+        box(verbatimTextOutput("rawFileHeader"), width = 800)
+      ))
+    }
+    
+    if (input$showIrtMS1Profile){
+      L <- append(L, list(
+        fluidRow(radioButtons("Ms1ppmError", "Ms1 ppmError",
+                              choices = c(5, 10, 20, 30, 50, 100),
+                              selected = 10,
+                              inline = TRUE,
+                              width = NULL)),
+        fluidRow(box(plotOutput("plotiRTDDAChromatograms"), width = "100%")),
+        fluidRow(box(plotOutput("plotDDAiRTfits"))),
+        fluidRow(box(plotOutput("plotDDAiRTprofiles"), width = "100%"))
+      ))
+    }
+    
+    if (input$showIrtMS2Profile){ 
+      L <- append(L, list(
+        fluidRow(shiny::htmlOutput("scanTypeUI")),
+        fluidRow(box(plotOutput("plotDIAiRTprofiles"), width = "100%"))
+      ))
+    }
+    
+    return(L)
+  })
   #### renderPlots DIA-NN -------------
   output$tableDIANN <- renderDataTable({ data() })
   
   output$tableComet <-  DT::renderDataTable({ cometData()  })
   
   output$plotiRTDDAChromatograms <- renderPlot({
-    iRTprofileRawDDA() |>
-      plot(main = input$file)
+    shiny::req(input$showIrtMS1Profile)
+    shiny::req(iRTprofileRawDDA())
+    
+    if(input$showIrtMS1Profile){
+      iRTprofileRawDDA() |>
+        plot(main = input$file)
+    }
   })
-  
-  
+
   #### plotDIAiRTprofiles  ------------
   output$plotDIAiRTprofiles <- renderPlot({
-    if(input$plotDiannMs2){
-      
-      message("calling iRTprofileRawDIA()  ...")
-      
-      
-      iRTprofileRawDIA()  |>
-        .plotChromatogramSet(, xlim=input$rtSlider)
-      
-    }else{
-      shiny::renderText("set off")
-    }
+    shiny::req(iRTprofileRawDIA())
+    
+    message("calling iRTprofileRawDIA()  ...")
+    iRTprofileRawDIA()  |>
+      .plotChromatogramSet(xlim=input$rtSlider)
   })
   
   output$plotDDAiRTprofiles <- renderPlot({
-    par(mfrow = c(2, 6), mar = c(4, 4, 4, 1))
+    shiny::req(input$showIrtMS1Profile)
+    shiny::req(rtFittedAPEX())
     
+    par(mfrow = c(2, 6), mar = c(4, 4, 4, 1))
     rtFittedAPEX <- rtFittedAPEX() |>
       lapply(function(x){
         plot(x$times, x$intensities,
              type='p',
              ylim = range(c(x$intensities,x$yp)),
              main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
-        
         lines(x$xx, x$yp, col='red'); x})
+    
   })
   
   output$plotDDAiRTfits <- renderPlot({
+    shiny::req(input$showIrtMS1Profile)
+    shiny::req(rtFittedAPEX())
+    
     iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26, 54.62, 100)
     
     rtFittedAPEX <- rtFittedAPEX() |>
@@ -393,7 +464,7 @@ function(input, output, session) {
   
   
   output$iRTpeptides <- renderUI({
-    if(input$plotDiannMs2){
+    if(input$showIrtMS2Profile){
       selectInput('iRTpeptides', 'iRTpeptides',
                   files(),
                   multiple = FALSE,
@@ -410,9 +481,9 @@ function(input, output, session) {
       lattice::xyplot(value ~ Time | variable * Instrument,
                       group = Instrument,
                       data = data(),
-                      scales = 'free',
-                      type = 'b',
-                      #layout = c(1, length(input$variables)),
+                      scales = list(y = list(relation = "free")),
+                      panel = .iqrPanel,
+                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                       auto.key = list(space = "bottom"))}
     else{.missing()}
   })
@@ -447,24 +518,37 @@ function(input, output, session) {
   imgHeight <- reactive({input$height |> as.integer()})
   
   output$cometPlot <- renderPlot({
-    
+    shiny::req(cometData())
     if(cometData() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * instrument,
                       group = scanType,
                       data = cometData(),
-                      scales = 'free',
-                      panel = .qcpanel,
-                      type = 'b',
-                      pch = 16,
-                      #layout = c(1, length(input$variables)),
+                      scales = list(y = list(relation = "free")),
+                      panel = .iqrPanel,
+                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgray.",
                       auto.key = list(space = "bottom"))
     }
     else{.missing()}
   },
   height = function(){400 * length(cometData()$instrument |> unique())})
+
+  rawFileHeader <- reactive({
+    shiny::req(input$file)
+    
+    rootdirraw() |>
+      file.path(input$file) |>
+      rawrr::readFileHeader()
+    })
   
-  #---- sessionInfo ----
+  #### print rawFileHeader  ----
+  output$rawFileHeader <- renderPrint({
+    shiny::req(rawFileHeader())
+    
+    capture.output(rawFileHeader())
+  })
   
+  
+  #### sessionInfo ----
   output$sessionInfo <- renderPrint({
     capture.output(sessionInfo())
   })

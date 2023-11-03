@@ -8,12 +8,13 @@ dashboardPage(
     sidebarMenu(
       menuItem("DIA-NN stat", tabName = "diannplots", icon = icon("chart-line")),
       menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
-      menuItem("comet stat", tabName = "cometplots", icon = icon("chart-line")),
-      menuItem("comet stat data", tabName = "cometdata", icon = icon("table")),
-      menuItem("iRT profiles", tabName = "iRTprofiles", icon = icon("chart-line")),
+      menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
+      menuItem("DDA-comet stat data", tabName = "cometdata", icon = icon("table")),
+      hr(),
+      menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
-      htmlOutput("file"),
+      
       selectInput('regex', 'file regex',
                   c(".*", ".*raw$", ".*autoQC.*dia.*raw$", ".*autoQC.*dda.*raw$", "*.zip"),
                   multiple = FALSE,
@@ -38,7 +39,7 @@ dashboardPage(
       tabItem(tabName = "diannplots",
               htmlOutput("variable"),
               fluidRow(htmlOutput("diannTimeSlider")),
-              fluidRow(box(plotOutput("diannPlot", height = 500, width = 1000)))
+              fluidRow(box(plotOutput("diannPlot"), height = "75%", width = "100%"))
       ),
       # Second tab content
       tabItem(tabName = "dianndata",
@@ -50,7 +51,7 @@ dashboardPage(
       tabItem(tabName = "cometplots",
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
-              fluidRow(box(plotOutput("cometPlot",width = 1000)))
+              fluidRow(box(plotOutput("cometPlot"), height = "75%", width = "100%"))
       ),
       tabItem(tabName = "cometdata",
               fluidRow(
@@ -58,19 +59,10 @@ dashboardPage(
                 fluidRow(DT::dataTableOutput('tableComet'))
               )
       ),
-      tabItem(tabName = "iRTprofiles",
-              fluidRow(box(plotOutput("plotiRTDDAChromatograms",
-                                      height = 300, width = 1000))),
-              fluidRow(box(plotOutput("plotDDAiRTfits", height = 300, width = 300))),
-              fluidRow(box(plotOutput("plotDDAiRTprofiles", height = 400, width = 1000))),
-              fluidRow(radioButtons("ppmError", "ppmError",
-                                    choices = c(10, 15, 20, 100),
-                                    selected = 10,
-                                    inline = TRUE,
-                                    width = NULL)),
-              checkboxInput("plotDiannMs2", "analyse ms2 profiles", value = FALSE, width = NULL),
-              fluidRow(htmlOutput("scanType")),
-              fluidRow(plotOutput("plotDIAiRTprofiles", height = 400, width = 1000))
+      tabItem(tabName = "rawFile",
+             fluidRow(box(htmlOutput("fileInput"), width = "100%")),
+             
+             htmlOutput("fileOutput")
       ),
       tabItem(tabName = "tic",
               fluidRow(
