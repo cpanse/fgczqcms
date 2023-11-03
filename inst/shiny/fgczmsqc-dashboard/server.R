@@ -230,7 +230,8 @@ function(input, output, session) {
   variables <- reactive({
     long()$variable |> unique()
   })
-  
+   
+  # TODO(cp): rename to diannData <-
   data <- reactive({
     now <- Sys.time()
     long()[long()$Instrument %in% input$instrument &
@@ -261,7 +262,7 @@ function(input, output, session) {
     on.exit(progress$close())
     
     c(data()$File.Name[data()$Instrument %in% input$instrument],
-      comet()$filename.y[comet()$instrument %in% input$instrument]) |>
+      cometData()$filename.y[comet()$instrument %in% input$instrument]) |>
       unique() |>
       lapply(function(f){
         if(file.exists(file.path(rootdirraw(), f))){return(f)}
