@@ -2,7 +2,10 @@
 ## server
 
 # requirements ===========
-stopifnot(require(readr), require(reshape2), require(shinydashboard))
+stopifnot(require(readr),
+          require(reshape2),
+          require(shinydashboard),
+          require(lattice))
 
 #stopifnot(require(bfabricShiny))
 
@@ -32,7 +35,15 @@ stopifnot(require(readr), require(reshape2), require(shinydashboard))
   invisible(x)
 }
 
+
 # utils ===========
+
+.qcpanel <- function(x, y, ...){
+  lattice::panel.abline(h = quantile(y, c(0.05, 0.25, 0.5, 0.75, 0.9)),
+               col='grey', lwd=c(1,2,3,2,1))
+  lattice::panel.xyplot(x, y, ...)
+}
+
 .assignInstrument <- function(x){
   for (i in c('QEXACTIVE_1', 'LUMOS_1', 'LUMOS_2', 'EXPLORIS_1', 'EXPLORIS_2', 'FUSION_2')){
     idx <- grepl(i, x$File.Name) 
@@ -219,7 +230,8 @@ function(input, output, session) {
   variables <- reactive({
     long()$variable |> unique()
   })
-  
+   
+  # TODO(cp): rename to diannData <-
   data <- reactive({
     now <- Sys.time()
     long()[long()$Instrument %in% input$instrument &
@@ -250,7 +262,7 @@ function(input, output, session) {
     on.exit(progress$close())
     
     c(data()$File.Name[data()$Instrument %in% input$instrument],
-      comet()$filename.y[comet()$instrument %in% input$instrument]) |>
+      cometData()$filename.y[comet()$instrument %in% input$instrument]) |>
       unique() |>
       lapply(function(f){
         if(file.exists(file.path(rootdirraw(), f))){return(f)}
@@ -431,23 +443,25 @@ function(input, output, session) {
                 value = c(0, min(maxtime, 28)), width = 1000)
   })
   #### comet lattice::xyplot -----------------
+  
+  imgHeight <- reactive({input$height |> as.integer()})
+  
   output$cometPlot <- renderPlot({
+    
     if(cometData() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * instrument,
                       group = scanType,
                       data = cometData(),
                       scales = 'free',
-                      panel = function(x,y,...){
-                        panel.abline(h = quantile(y, c(0.05, 0.25,0.5,0.75,0.9)), col='grey', lwd=c(1,2,3,2,1))
-                        panel.xyplot(x, y, ...)
-                      },
+                      panel = .qcpanel,
                       type = 'b',
                       pch = 16,
                       #layout = c(1, length(input$variables)),
                       auto.key = list(space = "bottom"))
     }
     else{.missing()}
-  })
+  },
+  height = function(){400 * length(cometData()$instrument |> unique())})
   
   
 }
