@@ -507,9 +507,9 @@ function(input, output, session) {
     print(input$ticfile)
     
     rv <- file.path(rootdirraw(), input$ticfile) |>
-      parallel::mclapply(FUN = function(f){
+      lapply(FUN = function(f){
         progress$set(message = "Reading", detail = f)
-        rawrr::readChromatogram(f, type='tic') } , mc.cores = 4)
+        rawrr::readChromatogram(f, type='tic') })
     
     rv
   })
