@@ -4,3 +4,6 @@ contains shell scripts and a shiny dash board for handling mass spec qc workflow
 
 
 requires: Docker, R (>4.2) shiny
+
+
+https://shiny-ms.fgcz.uzh.ch/fgczmsqc-dashboard/
