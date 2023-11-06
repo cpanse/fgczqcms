@@ -1,7 +1,6 @@
-# qc 
+# fgcz ms qc | dashboard
 
-contains shell scripts and a shiny dash board for handling mass spec qc workflows (dia, dda)
-
+contains shell scripts and a shiny dash board for handling mass spec qc workflows (dia, dda) x (raw, tims)
 
 requires: Docker, R (>4.2) shiny
 
