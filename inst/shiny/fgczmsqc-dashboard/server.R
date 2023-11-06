@@ -212,6 +212,10 @@ function(input, output, session) {
   })
   
   cometData <- reactive({
+    shiny::req( input$instrument)
+    shiny::req( input$cometVariables )
+    shiny::req(cometLong())
+    
     now <- Sys.time()
     cometLong()[cometLong()$instrument %in% input$instrument &
                   cometLong()$variable %in% input$cometVariables &
@@ -257,7 +261,7 @@ function(input, output, session) {
   })
    
   # TODO(cp): rename to diannData <-
-  data <- reactive({
+  diannData <- reactive({
     shiny::req(input$variables)
     shiny::req(input$instrument)
     
@@ -289,7 +293,7 @@ function(input, output, session) {
     progress$set(message = "Composing file list ...")
     on.exit(progress$close())
     
-    c(data()$File.Name[data()$Instrument %in% input$instrument],
+    c(diannData()$File.Name[diannData()$Instrument %in% input$instrument],
       cometData()$filename.y[comet()$instrument %in% input$instrument]) |>
       unique() |>
       lapply(function(f){
@@ -401,7 +405,7 @@ function(input, output, session) {
     return(L)
   })
   #### renderPlots DIA-NN -------------
-  output$tableDIANN <- renderDataTable({ data() })
+  output$tableDIANN <- renderDataTable({ diannData() })
   
   output$tableComet <-  DT::renderDataTable({ cometData()  })
   
@@ -479,19 +483,18 @@ function(input, output, session) {
   
   #### DIA-NN lattice::xyplot -----------------
   output$diannPlot <- renderPlot({
-    shiny::req(data())
+    shiny::req(diannData())
+
+    lattice::xyplot(value ~ Time | variable * Instrument,
+                    group = Instrument,
+                    data = diannData(),
+                    scales = list(y = list(relation = "free")),
+                    panel = .iqrPanel,
+                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                    auto.key = list(space = "bottom"))
     
-    if(data() |> nrow() > 0){
-      lattice::xyplot(value ~ Time | variable * Instrument,
-                      group = Instrument,
-                      data = data(),
-                      scales = list(y = list(relation = "free")),
-                      panel = .iqrPanel,
-                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                      auto.key = list(space = "bottom"))}
-    else{.missing()}
   },
-  height = function(){400 * length(data()$Instrument |> unique())})
+  height = function(){400 * length(diannData()$Instrument |> unique())})
   
   #### cometVariable ------------
   output$cometVariable <- renderUI({
