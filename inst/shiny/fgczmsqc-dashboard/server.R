@@ -213,7 +213,7 @@ function(input, output, session) {
   
   cometData <- reactive({
     shiny::req( input$instrument)
-    shiny::req( input$cometVariables )
+    #shiny::req( input$cometVariables )
     shiny::req(cometLong())
     
     now <- Sys.time()
@@ -262,7 +262,7 @@ function(input, output, session) {
    
   # TODO(cp): rename to diannData <-
   diannData <- reactive({
-    shiny::req(input$variables)
+    # shiny::req(input$variables)
     shiny::req(input$instrument)
     
     now <- Sys.time()
@@ -289,6 +289,9 @@ function(input, output, session) {
   })
   
   files <- reactive({
+    shiny::req(diannData())
+    shiny::req(cometData())
+
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Composing file list ...")
     on.exit(progress$close())
@@ -357,15 +360,30 @@ function(input, output, session) {
                 selected = defaulVariables)
   })
   
+  output$ticFileInput <- renderUI({
+    shiny::req(files())
+    
+    L <- list(selectInput('ticfile', 'TIC file candidates',
+                          files(),
+                          multiple = TRUE,
+                          selected = files()[1]),
+              hr())
+    
+    
+    return(L)
+  })
+  
   output$fileInput <- renderUI({
+    shiny::req(files())
+    
     L <- list(selectInput('file', 'Files',
                           files(),
                           multiple = FALSE,
                           selected = files()[1]),
               hr(),
               checkboxInput("showRawFileHeader", "show Raw File Header", value = FALSE, width = NULL),
-              checkboxInput("showIrtMS1Profile", "show Irt Ms Profile", value = FALSE, width = NULL),
-              checkboxInput("showIrtMS2Profile", "show Irt Ms2 Profile" , value = FALSE, width = NULL),
+              checkboxInput("showIrtMS1Profile", "show iRT Ms Profile", value = FALSE, width = NULL),
+              checkboxInput("showIrtMS2Profile", "show iRT Ms2 Profile" , value = FALSE, width = NULL),
               hr())
   
   
@@ -478,8 +496,36 @@ function(input, output, session) {
     }
   })
   
-
-  output$plotTIC <- renderPlot({ .tic(file.path(rootdirraw(), input$file)) })
+  ##### TIC -------------------------------
+  ticData <- reactive({
+    shiny::req(input$ticfile)
+    
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading TIC data ...")
+    on.exit(progress$close())
+    
+    print(input$ticfile)
+    
+    rv <- file.path(rootdirraw(), input$ticfile) |>
+      parallel::mclapply(FUN = function(f){
+        progress$set(message = "Reading", detail = f)
+        rawrr::readChromatogram(f, type='tic') } , mc.cores = 4)
+    
+    rv
+  })
+  
+  output$plotTIC <- renderPlot({
+  
+    shiny::req(ticData())
+    
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Plotting TIC data ...")
+    on.exit(progress$close())
+    
+    par(mfrow = c(length(input$ticfile), 1))
+    
+    ticData() |> lapply(function(x){plot(x)})
+    }, height = function(){300 * length(input$ticfile)})
   
   #### DIA-NN lattice::xyplot -----------------
   output$diannPlot <- renderPlot({

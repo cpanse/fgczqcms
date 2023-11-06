@@ -66,8 +66,9 @@ dashboardPage(
       tabItem(tabName = "tic",
               fluidRow(
                 h2("Total ion count"),
+                fluidRow(box(htmlOutput("ticFileInput"), width = "100%")),
                 fluidRow(
-                  box(plotOutput("plotTIC", height = 400, width = 1000))
+                  box(plotOutput("plotTIC"), width = "100%")
                 )
               )
       ),
