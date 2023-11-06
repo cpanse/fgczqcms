@@ -485,16 +485,17 @@ function(input, output, session) {
                       sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                       auto.key = list(space = "bottom"))}
     else{.missing()}
-  })
+  },
+  height = function(){400 * length(data()$Instrument |> unique())})
   
   #### cometVariable ------------
   output$cometVariable <- renderUI({
     
-    defaulVariables <- c('nMS2')
+    defaulVariables <- c('nConfidentProteins', 'nConfidentPeptide', 'nMS2')
     
     selectInput('cometVariables', 'Variables',
                 cometVariables(),
-                multiple = FALSE,
+                multiple = TRUE,
                 selected = defaulVariables)
     
   })
