@@ -258,6 +258,9 @@ function(input, output, session) {
    
   # TODO(cp): rename to diannData <-
   data <- reactive({
+    shiny::req(input$variables)
+    shiny::req(input$instrument)
+    
     now <- Sys.time()
     long()[long()$Instrument %in% input$instrument &
              long()$variable %in% input$variables &
@@ -343,7 +346,7 @@ function(input, output, session) {
   })
   
   output$variable <- renderUI({
-    defaulVariables <- c('Precursors.Identified', 'Proteins.Identified')
+    defaulVariables <- c('Precursors.Identified', 'Proteins.Identified', 'FWHM.RT')
     selectInput('variables', 'Variables',
                 variables(),
                 multiple = TRUE,
@@ -476,6 +479,8 @@ function(input, output, session) {
   
   #### DIA-NN lattice::xyplot -----------------
   output$diannPlot <- renderPlot({
+    shiny::req(data())
+    
     if(data() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * Instrument,
                       group = Instrument,
