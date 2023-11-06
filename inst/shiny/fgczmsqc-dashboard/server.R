@@ -173,7 +173,7 @@ function(input, output, session) {
     progress$set(message = "Reading comet data ...")
     on.exit(progress$close())
     e <- new.env()
-    fn <- rootdir() |> file.path("comet-20231030.RData")  |> load(envir=e)
+    fn <- rootdir() |> file.path("comet.RData")  |> load(envir=e)
     
     e$comet$assignmentRate <- round (100 * e$comet$nConfidentPSM / e$comet$nPSM)
     e$comet$Time <- as.POSIXct(e$comet$time )
