@@ -311,7 +311,7 @@ function(input, output, session) {
     
     sliderInput("diannDays", "Observation range in days:", min = 0,
                 max = maxtime,
-                value = c(0, min(28, maxtime)), width = 1000)
+                value = c(0, min(28, maxtime)), width = "100%")
   })
   
   
@@ -339,7 +339,7 @@ function(input, output, session) {
                       selected = names(iRTmz())[1]),
           sliderInput("rtSlider", "rtSlider", min = 0, max = 120,
                       #max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
-                      value = c(26, 29), width = 1000))
+                      value = c(26, 29), width = "100%"))
   })
   
   output$variable <- renderUI({
@@ -510,7 +510,7 @@ function(input, output, session) {
     
     sliderInput("cometDays", "Observation range in days:", min = 0,
                 max = maxtime,
-                value = c(0, min(maxtime, 28)), width = 1000)
+                value = c(0, min(maxtime, 28)), width = "100%")
   })
   #### comet lattice::xyplot -----------------
   
@@ -518,6 +518,7 @@ function(input, output, session) {
   
   output$cometPlot <- renderPlot({
     shiny::req(cometData())
+
     if(cometData() |> nrow() > 0){
       lattice::xyplot(value ~ Time | variable * instrument,
                       group = scanType,
