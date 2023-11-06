@@ -117,10 +117,10 @@ function(input, output, session) {
   
   #### iRTprofileRawDIA --------------
   iRTprofileRawDIA <- reactive({
-    #shiny::req(input$file)
-    #shiny::req(input$iRTpeptide)
-    #shiny::req(input$scanType)
-    #shiny::req(input$Ms2ppmError)
+    shiny::req(input$file)
+    shiny::req(input$iRTpeptide)
+    shiny::req(input$scanType)
+    shiny::req(input$Ms2ppmError)
     
     progress <- shiny::Progress$new(session = session)
     msg <- paste0("Reading Ms2 profiles for ", input$iRTpeptide, " ...")
@@ -323,11 +323,10 @@ function(input, output, session) {
   })
   
   output$scanTypeUI <- renderUI({
-    shiny::req(input$showIrtMS2Profile)
-    
+    shiny::req(scanType())
     list(radioButtons("Ms2ppmError", "Ms2 ppmError",
                       choices = c(10, 20, 30, 50, 100),
-                      selected = 10,
+                      selected = 30,
                       inline = TRUE,
                       width = NULL),
          selectInput('scanType', 'scanType',
@@ -338,10 +337,9 @@ function(input, output, session) {
                       names(iRTmz()),
                       multiple = FALSE,
                       selected = names(iRTmz())[1]),
-          sliderInput("rtSlider", "rtSlider", min = 0,
-                      max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
+          sliderInput("rtSlider", "rtSlider", min = 0, max = 120,
+                      #max = 1 + ((iRTprofileRawDDA()[[1]][['times']]) |> max() |> round()),
                       value = c(26, 29), width = 1000))
-    
   })
   
   output$variable <- renderUI({
@@ -367,6 +365,7 @@ function(input, output, session) {
    return(L)
   })
   
+  ### render fileOutput -----------
   output$fileOutput <- renderUI({
     L <- list()
     
