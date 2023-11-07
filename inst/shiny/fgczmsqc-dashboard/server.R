@@ -62,8 +62,15 @@ stopifnot(require(readr),
 }
 
 
+## hard coded B-Fabric instrumentids
+.getInstruments <- function(){
+  list('QEXACTIVE_1' = 93, 'LUMOS_1' = 214 , 'LUMOS_2' = 252,
+       'EXPLORIS_1' = 253, 'EXPLORIS_2' = 335, 'FUSION_2' = 73)
+}
+
+
 .assignInstrument <- function(x){
-  for (i in c('QEXACTIVE_1', 'LUMOS_1', 'LUMOS_2', 'EXPLORIS_1', 'EXPLORIS_2', 'FUSION_2')){
+  for (i in names(.getInstruments())){
     idx <- grepl(i, x$File.Name) 
     x$Instrument[which(idx)] <- i
   }
@@ -85,10 +92,33 @@ stopifnot(require(readr),
 # define server logic ============
 function(input, output, session) {
   #  reactives =============
+  bfabricInstrumentEvents <- reactive({
+    shiny::req(input$useBfabric)
+    
+    if(input$useBfabric){
+      rv <- bfabricShiny::readPages(login,
+                              webservicepassword,
+                              endpoint = 'instrumentevent',
+                              query = list(instrumentid = .getInstruments() |>
+                                             as.integer() |> as.list()),
+                              posturl = bfabricposturl)
+      
+      return(rv)
+    }
+    NULL
+  })
+  
+  rawFileHeader <- reactive({
+    shiny::req(input$file)
+    
+    rootdirraw() |>
+      file.path(input$file) |>
+      rawrr::readFileHeader()
+  })
   
   iRTmz <- reactive({
-    iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384, 683.8282,
-               683.8541, 699.3388, 726.8361, 776.9301)
+    iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384,
+               683.8282, 683.8541, 699.3388, 726.8361, 776.9301)
     
     names(iRTmz) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
                       "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
@@ -327,13 +357,14 @@ function(input, output, session) {
   
   
   output$instrument <- renderUI({
-    L <- tagList(fluidRow(selectInput('instrument', 'Instruments',
+    L <- (fluidRow(selectInput('instrument', 'Instruments',
                      instruments(),
                      multiple = TRUE,
                      selected = instruments()[1])))
     
     if (require(bfabricShiny)){
-      L <- append(L, fluidRow(checkboxInput('useBfabric', 'use B-Fabric',
+      L <- tagList(L, fluidRow(checkboxInput('useBfabric',
+                                             'use B-Fabric',
                                             value = FALSE)))
     }
          
@@ -351,7 +382,7 @@ function(input, output, session) {
                       scanType(),
                       multiple = FALSE,
                       selected = scanType()[1]),
-          selectInput('iRTpeptide', 'iRTpeptide',
+          selectInput('iRTpeptide', 'iRTpeptide fragment ions',
                       names(iRTmz()),
                       multiple = FALSE,
                       selected = names(iRTmz())[1]),
@@ -384,32 +415,28 @@ function(input, output, session) {
   output$fileInput <- renderUI({
     shiny::req(files())
     
-    L <- list(selectInput('file', 'Files',
+    L <- tagList(fluidRow(box(selectInput('file', 'Files',
                           files(),
                           multiple = FALSE,
-                          selected = files()[1]),
-              hr(),
-              checkboxInput("showRawFileHeader", "show Raw File Header", value = FALSE, width = NULL),
-              checkboxInput("showIrtMS1Profile", "show iRT Ms Profile", value = FALSE, width = NULL),
-              checkboxInput("showIrtMS2Profile", "show iRT Ms2 Profile" , value = FALSE, width = NULL),
-              hr())
-  
-  
+                          selected = files()[1])), width = "100%"),
+              fluidRow(checkboxInput("showRawFileHeader", "show raw File Header", value = FALSE)),
+              fluidRow(checkboxInput("showIrtMS1Profile", "show iRT Ms Profile", value = FALSE)),
+              fluidRow(checkboxInput("showIrtMS2Profile", "show iRT Ms2 Profile" , value = FALSE)))
    return(L)
   })
   
   ### render fileOutput -----------
   output$fileOutput <- renderUI({
-    L <- list()
+    L <- tagList()
     
     if (input$showRawFileHeader){
-      L <- append(L, fluidRow(
-        box(verbatimTextOutput("rawFileHeader"), width = 800)
+      L <- tagList(fluidRow(
+        fluidRow(box(verbatimTextOutput("rawFileHeader"), width = 800))
       ))
     }
     
     if (input$showIrtMS1Profile){
-      L <- append(L, list(
+      L <- append(L, tagList(
         fluidRow(radioButtons("Ms1ppmError", "Ms1 ppmError",
                               choices = c(5, 10, 20, 30, 50, 100),
                               selected = 10,
@@ -422,7 +449,7 @@ function(input, output, session) {
     }
     
     if (input$showIrtMS2Profile){ 
-      L <- append(L, list(
+      L <- append(L, tagList(
         fluidRow(shiny::htmlOutput("scanTypeUI")),
         fluidRow(box(plotOutput("plotDIAiRTprofiles"), width = "100%"))
       ))
@@ -523,33 +550,7 @@ function(input, output, session) {
     rv
   })
   
-  output$plotTIC <- renderPlot({
-  
-    shiny::req(ticData())
-    
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Plotting TIC data ...")
-    on.exit(progress$close())
-    
-    par(mfrow = c(length(input$ticfile), 1))
-    
-    ticData() |> lapply(function(x){plot(x)})
-    }, height = function(){300 * length(input$ticfile)})
-  
-  #### DIA-NN lattice::xyplot -----------------
-  output$diannPlot <- renderPlot({
-    shiny::req(diannData())
-
-    lattice::xyplot(value ~ Time | variable * Instrument,
-                    group = Instrument,
-                    data = diannData(),
-                    scales = list(y = list(relation = "free")),
-                    panel = .iqrPanel,
-                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                    auto.key = list(space = "bottom"))
-    
-  },
-  height = function(){400 * length(diannData()$Instrument |> unique())})
+ 
   
   #### cometVariable ------------
   output$cometVariable <- renderUI({
@@ -577,9 +578,6 @@ function(input, output, session) {
                 value = c(0, min(maxtime, 28)), width = "100%")
   })
   #### comet lattice::xyplot -----------------
-  
-  imgHeight <- reactive({input$height |> as.integer()})
-  
   output$cometPlot <- renderPlot({
     shiny::req(cometData())
 
@@ -593,26 +591,46 @@ function(input, output, session) {
                       auto.key = list(space = "bottom"))
     }
     else{.missing()}
-  },
-  height = function(){400 * length(cometData()$instrument |> unique())})
-
-  rawFileHeader <- reactive({
-    shiny::req(input$file)
-    
-    rootdirraw() |>
-      file.path(input$file) |>
-      rawrr::readFileHeader()
-    })
+  }, height = function(){400 * length(cometData()$instrument |> unique())})
   
-  #### print rawFileHeader  ----
+  #### DIA-NN lattice::xyplot -----------------
+  output$diannPlot <- renderPlot({
+    shiny::req(diannData())
+    
+    lattice::xyplot(value ~ Time | variable * Instrument,
+                    group = Instrument,
+                    data = diannData(),
+                    scales = list(y = list(relation = "free")),
+                    panel = .iqrPanel,
+                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                    auto.key = list(space = "bottom"))
+    
+  }, height = function(){400 * length(diannData()$Instrument |> unique())})
+  
+  
+  ## plot TICs --------
+  output$plotTIC <- renderPlot({
+    shiny::req(ticData())
+    
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Plotting TIC data ...")
+    on.exit(progress$close())
+    
+    par(mfrow = c(length(input$ticfile), 1))
+    
+    ticData() |> lapply(function(x){plot(x)})
+  }, height = function(){300 * length(input$ticfile)})
+  
+  
+  
+  #### render rawFileHeader  ----
   output$rawFileHeader <- renderPrint({
     shiny::req(rawFileHeader())
     
     capture.output(rawFileHeader())
   })
   
-  
-  #### sessionInfo ----
+  #### render sessionInfo ----
   output$sessionInfo <- renderPrint({
     capture.output(sessionInfo())
   })

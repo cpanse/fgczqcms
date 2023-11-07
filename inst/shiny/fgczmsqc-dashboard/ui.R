@@ -60,8 +60,9 @@ dashboardPage(
               )
       ),
       tabItem(tabName = "rawFile",
-             fluidRow(box(htmlOutput("fileInput"), width = "100%")),
-             htmlOutput("fileOutput")
+              tagList(
+            htmlOutput("fileInput", width = "100%"),
+            htmlOutput("fileOutput"))
       ),
       tabItem(tabName = "tic",
               fluidRow(
