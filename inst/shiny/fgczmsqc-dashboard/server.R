@@ -327,13 +327,14 @@ function(input, output, session) {
   
   
   output$instrument <- renderUI({
-    L <- list(fluidRow(selectInput('instrument', 'Instruments',
+    L <- tagList(fluidRow(selectInput('instrument', 'Instruments',
                      instruments(),
                      multiple = TRUE,
                      selected = instruments()[1])))
     
     if (require(bfabricShiny)){
-      L <- append(L, fluidRow(checkboxInput('useBfabric', 'use B-Fabric', value = FALSE)))
+      L <- append(L, fluidRow(checkboxInput('useBfabric', 'use B-Fabric',
+                                            value = FALSE)))
     }
          
     return(L)
