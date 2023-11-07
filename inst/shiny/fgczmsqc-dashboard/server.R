@@ -188,6 +188,7 @@ function(input, output, session) {
   })
   
   cometFilter <- reactive({
+    shiny::req(comet())
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Filtering comet data acc. time and instrument ...")
     on.exit(progress$close())
@@ -326,10 +327,16 @@ function(input, output, session) {
   
   
   output$instrument <- renderUI({
-    selectInput('instrument', 'Instruments',
-                instruments(),
-                multiple = TRUE,
-                selected = instruments()[1])
+    L <- list(selectInput('instrument', 'Instruments',
+                     instruments(),
+                     multiple = TRUE,
+                     selected = instruments()[1]))
+    
+    if (require(bfabricShiny)){
+      L <- append(L, checkboxInput('useBfabric', 'use B-Fabric', value = FALSE))
+    }
+         
+    return(L)
   })
   
   output$scanTypeUI <- renderUI({
@@ -504,11 +511,12 @@ function(input, output, session) {
     progress$set(message = "Reading TIC data ...")
     on.exit(progress$close())
     
-    print(input$ticfile)
+    count <- 0
     
     rv <- file.path(rootdirraw(), input$ticfile) |>
       lapply(FUN = function(f){
-        progress$set(message = "Reading", detail = f)
+        count <- count + 1
+        progress$set(message = "Reading TIC from file", detail = basename(f), value = count/length(input$ticfile))
         rawrr::readChromatogram(f, type='tic') })
     
     rv
