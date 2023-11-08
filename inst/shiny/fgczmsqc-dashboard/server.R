@@ -748,12 +748,12 @@ function(input, output, session) {
   })
   
   output$bfabricInstrumentEventsOutput <- renderUI({
-   # shiny::req(bfabricInstrumentEvents())
+   shiny::req(bfabricInstrumentEvents())
     
     if (input$useBfabric){
       DT::renderDataTable({ bfabricInstrumentEvents()  })
     }else{
-      DT::renderDataTable({ iris  })
+     NULL
     }
     
   })
