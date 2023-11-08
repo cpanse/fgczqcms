@@ -197,7 +197,9 @@ function(input, output, session) {
     now <- Sys.time()
     
     instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
-      comet()$instrument %in% input$instrument 
+      comet()$instrument %in% input$instrument  &
+        input$cometDays[1] <= difftime(now, bfabricInstrumentEvents()$time, units = "days")  &
+        difftime(now, bfabricInstrumentEvents()$time, units = "days") < input$cometDays[2] 
     
     bfabricInstrumentEvents()[instrumentFilter, ]
   })
