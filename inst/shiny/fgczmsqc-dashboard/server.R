@@ -751,7 +751,11 @@ function(input, output, session) {
    shiny::req(bfabricInstrumentEvents())
     
     if (input$useBfabric){
-      DT::renderDataTable({ bfabricInstrumentEvents()  })
+      instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% .getInstruments()[input$instrument] |> unlist() 
+  
+      .getInstruments() |> unlist()
+      
+      DT::renderDataTable({ bfabricInstrumentEvents()[instrumentFilter ,]  })
     }else{
      NULL
     }
