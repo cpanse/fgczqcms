@@ -125,14 +125,35 @@ function(input, output, session) {
   autoQC01Long <- reactive({
     shiny::req(autoQC01())
     
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reshaping autoQC01 data ...")
+    on.exit(progress$close())
+    
     rv <- autoQC01() |>
       reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
+  })
+  
+  autoQC01Data <- reactive({
+    shiny::req(autoQC01Long())
+    
+    
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Filtering autoQC01 data ...")
+    on.exit(progress$close())
+    
+    now <- Sys.time()
+    
+    message(paste(input$autoQC01Variables, collapse = ';'))
+    
+    autoQC01Long()[autoQC01Long()$Instrument %in% input$instrument &
+                   autoQC01Long()$variable %in% input$autoQC01Variables &
+                   input$autoQC01Days[1] <=  difftime(now, autoQC01Long()$time, units = "days") &
+                   difftime(now, autoQC01Long()$time, units = "days") < input$autoQC01Days[2], ]
   })
   
   #  reactives =============
   bfabricInstrumentEvents <- reactive({
     shiny::req(input$useBfabric)
-    
     
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Fetching B-Fabric instrument events ...")
@@ -285,6 +306,10 @@ function(input, output, session) {
                                  "scanType"))
   })
   
+  autoQC01Variables <- reactive({
+    autoQC01Long()$variable |> unique()
+  })
+  
   cometVariables <- reactive({
     cometLong()$variable |> unique()
   })
@@ -389,6 +414,20 @@ function(input, output, session) {
   })
   
   #  renderUIs =============
+  output$autoQC01TimeSlider <- renderUI({
+    mintime <- min(autoQC01()$time)
+    now <- Sys.time()
+    
+    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
+                  round() |>
+                  as.integer())
+    
+    sliderInput("autoQC01Days", "Observation range in days:", min = 0,
+                max = maxtime,
+                value = c(0, min(28, maxtime)), width = "100%")
+  })
+  
+  
   output$diannTimeSlider <- renderUI({
     mintime <- min(long()$Time)
     now <- Sys.time()
@@ -600,6 +639,16 @@ function(input, output, session) {
  
   
   #### cometVariable ------------
+  output$autoQC01Variable <- renderUI({
+    
+    defaulVariables <- c('slope', 'r.squared', 'intercept')
+
+    selectInput('autoQC01Variables', 'Variables',
+                autoQC01Variables(),
+                multiple = TRUE,
+                selected = defaulVariables)
+    
+  })
   output$cometVariable <- renderUI({
     
     defaulVariables <- c('nConfidentProteins', 'nConfidentPeptide', 'nMS2')
@@ -657,7 +706,7 @@ function(input, output, session) {
   
   #### DIA-NN lattice::xyplot -----------------
   output$autoQC01Plot <- renderPlot({
-    shiny::req(autoQC01Long())
+    shiny::req(autoQC01Data())
     
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Plotting autoQC01 data ...")
@@ -665,13 +714,13 @@ function(input, output, session) {
     
     lattice::xyplot(value ~ time |  variable * Instrument,
                     group = Instrument,
-                    data = autoQC01Long(),
+                    data = autoQC01Data(),
                     scales = list(y = list(relation = "free")),
                     panel = .iqrPanel,
-                    #sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                     auto.key = list(space = "bottom"))
     
-  }, height = function(){400 * length(autoQC01Long()$Instrument |> unique())})
+  }, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
   
 
   
@@ -699,10 +748,12 @@ function(input, output, session) {
   })
   
   output$bfabricInstrumentEventsOutput <- renderUI({
-    shiny::req(bfabricInstrumentEvents())
+   # shiny::req(bfabricInstrumentEvents())
     
     if (input$useBfabric){
       DT::renderDataTable({ bfabricInstrumentEvents()  })
+    }else{
+      DT::renderDataTable({ iris  })
     }
     
   })

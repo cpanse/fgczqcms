@@ -38,6 +38,8 @@ dashboardPage(
     tabItems(
       tabItem(tabName = "autoQC01Plots",
               fluidRow(h2("autoQC01")),
+              fluidRow(htmlOutput("autoQC01Variable")),
+              fluidRow(htmlOutput("autoQC01TimeSlider")),
               #fluidRow(htmlOutput("autoQC01TimeSlider")),
               fluidRow(box(plotOutput("autoQC01Plot"), height = "55%", width = "100%"))
       ),
@@ -50,13 +52,14 @@ dashboardPage(
               fluidRow(
                 h2("DIA-NN stat.tsv"),
                 DT::dataTableOutput('tableDIANN')
+                #htmlOutput("bfabricInstrumentEventsOutput")
               )
       ),
       tabItem(tabName = "cometplots",
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
               fluidRow(box(plotOutput("cometPlot"), height = "75%", width = "100%")),
-              fluidRow(box(DT::dataTableOutput("bfabricInstrumentEventsOutput")))
+              fluidRow(box(htmlOutput("bfabricInstrumentEventsOutput")))
       ),
       tabItem(tabName = "cometdata",
               fluidRow(
