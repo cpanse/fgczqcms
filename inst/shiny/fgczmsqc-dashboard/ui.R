@@ -49,14 +49,14 @@ dashboardPage(
       tabItem(tabName = "dianndata",
               fluidRow(
                 h2("DIA-NN stat.tsv"),
-                dataTableOutput('tableDIANN')
+                DT::dataTableOutput('tableDIANN')
               )
       ),
       tabItem(tabName = "cometplots",
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
               fluidRow(box(plotOutput("cometPlot"), height = "75%", width = "100%")),
-              fluidRow(DT::dataTableOutput(("bfabricInstrumentEventsOutput")))
+              fluidRow(DT::dataTableOutput("bfabricInstrumentEventsOutput"))
       ),
       tabItem(tabName = "cometdata",
               fluidRow(
