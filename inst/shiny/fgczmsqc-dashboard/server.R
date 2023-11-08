@@ -11,6 +11,7 @@ stopifnot(require(readr),
 #stopifnot(require(bfabricShiny))
 
 
+
 .plotChromatogramSet <- function (x, diagnostic = FALSE, ...) 
 {
   stopifnot(attr(x, "class") == "rawrrChromatogramSet")
@@ -61,6 +62,25 @@ stopifnot(require(readr),
   lattice::panel.xyplot(x[!filter], y[!filter], ..., type = 'p', col='lightgrey')
 }
 
+.lattice <- function(S, useBfabric = FALSE, bfabricInstrumentEvents) {
+  if (nrow(S) > 0){
+    lattice::xyplot(value ~ time | variable * Instrument,
+                    group = Instrument,
+                    data = S,
+                    scales = list(y = list(relation = "free")),
+                    panel = function(x, y, ...){
+                      .iqrPanel(x, y, ...)
+                      try(if (useBfabric){
+                        lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
+                      }, TRUE)
+                      
+                    },
+                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                    auto.key = list(space = "bottom"))
+  }else{
+    .missing()
+  }
+}
 
 ## hard coded B-Fabric instrumentids
 .getInstruments <- function(){
@@ -102,8 +122,9 @@ stopifnot(require(readr),
 
 # define server logic ============
 function(input, output, session) {
+  #  reactives =============
   ## autoQC01 ---------
-  autoQC01 <- reactive({
+  autoQC01wide <- reactive({
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reading autoQC01 data ...")
     on.exit(progress$close())
@@ -123,19 +144,18 @@ function(input, output, session) {
   })
   
   autoQC01Long <- reactive({
-    shiny::req(autoQC01())
+    shiny::req(autoQC01wide())
     
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reshaping autoQC01 data ...")
     on.exit(progress$close())
     
-    rv <- autoQC01() |>
+    rv <- autoQC01wide() |>
       reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
   })
   
   autoQC01Data <- reactive({
     shiny::req(autoQC01Long())
-    
     
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Filtering autoQC01 data ...")
@@ -145,13 +165,14 @@ function(input, output, session) {
     
     message(paste(input$autoQC01Variables, collapse = ';'))
     
-    autoQC01Long()[autoQC01Long()$Instrument %in% input$instrument &
-                   autoQC01Long()$variable %in% input$autoQC01Variables &
-                   input$autoQC01Days[1] <=  difftime(now, autoQC01Long()$time, units = "days") &
-                   difftime(now, autoQC01Long()$time, units = "days") < input$autoQC01Days[2], ]
+    Filter <- autoQC01Long()$Instrument %in% input$instrument &
+      autoQC01Long()$variable %in% input$autoQC01Variables &
+      input$autoQC01TimeRange[1] <= autoQC01Long()$time & autoQC01Long()$time <= input$autoQC01TimeRange[2]
+    
+    autoQC01Long()[Filter, ]
   })
   
-  #  reactives =============
+  
   
   ## bfabricInstrumentEvents  -------------
   bfabricInstrumentEvents <- reactive({
@@ -293,45 +314,58 @@ function(input, output, session) {
   
   
   ###### comet --------
-  comet <- reactive({
+  cometWide <- reactive({
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reading comet data ...")
     on.exit(progress$close())
     e <- new.env()
-    fn <- rootdir() |> file.path("comet.RData")  |> load(envir=e)
+    fn <- rootdir() |>
+      file.path("comet.RData") |>
+      load(envir=e)
     
     e$comet$assignmentRate <- round (100 * e$comet$nConfidentPSM / e$comet$nPSM)
-    e$comet$Time <- as.POSIXct(e$comet$time )
     
-    cc <- c('md5', 'filename.y', 'Time', 'instrument',  'scanType', 'psmFdrCutoff',
-            'nDecoyPSM', 'nConfidentPSM', 'nDecoyPeptide', 'nConfidentPeptide',
+    
+    
+    
+    ## rename columns
+    colnames(e$comet)[colnames(e$comet) == "filename.y"] <- "File.Name"
+    colnames(e$comet)[colnames(e$comet) == "Time"] <- "time"
+    colnames(e$comet)[colnames(e$comet) == "instrument"] <- "Instrument"
+    colnames(e$comet)[colnames(e$comet) == "nConfidentPeptide"] <- "nConfidentPeptides"
+    
+    cc <- c('md5', 'File.Name', 'time', 'Instrument',  'scanType', 'psmFdrCutoff',
+            'nDecoyPSM', 'nConfidentPSM', 'nDecoyPeptide', 'nConfidentPeptides',
             'nDecoyProteins', 'nConfidentProteins', 'fdrPSM', 'fdrPeptide',
             'fdrProtein',  'size',   'nMS2', 'TIC')
-    
-    
-    e$comet[grepl(input$regex, e$comet$filename.y), cc]
+    e$comet$time <- as.POSIXct(e$comet$time )
+    e$comet[grepl(input$regex, e$comet$File.Name), cc]
   })
   
-  cometFilter <- reactive({
-    shiny::req(comet())
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Filtering comet data acc. time and instrument ...")
-    on.exit(progress$close())
+  
+  
+  cometLong <- reactive({
+    shiny::req(cometWide())
+    rv <- cometWide() |>
+      reshape2::melt(id.vars = c("md5", "File.Name", "time", "Instrument",
+                                 "scanType"))
+  })
+  
+  cometData <- reactive({
+    shiny::req(input$instrument)
+    shiny::req(cometLong())
     
     now <- Sys.time()
     
-    filter <- input$cometDays[1] <= difftime(now, comet()$Time, units = "days")  &
-      difftime(now, comet()$Time, units = "days") < input$cometDays[2] &
-      comet()$instrument %in% input$instrument 
+    filter <- cometLong()$Instrument %in% input$instrument &
+      cometLong()$variable %in% input$cometVariables &
+      input$cometDays[1] <=  difftime(now, cometLong()$time, units = "days") &
+      difftime(now, cometLong()$time, units = "days") < input$cometDays[2]
     
-    filter
-  })
-  
-  cometLong <- reactive({
-    rv <- comet() |>
-      reshape2::melt(id.vars = c("md5", "filename.y", "Time", "instrument",
-                                 "scanType"))
-  })
+    message(paste0("comet filter length: ", sum(filter)))
+    
+    cometLong()[filter, ]
+  }) 
   
   autoQC01Variables <- reactive({
     autoQC01Long()$variable |> unique()
@@ -341,27 +375,11 @@ function(input, output, session) {
     cometLong()$variable |> unique()
   })
   
-  cometData <- reactive({
-    shiny::req( input$instrument)
-    #shiny::req( input$cometVariables )
-    shiny::req(cometLong())
-    
-    now <- Sys.time()
-    
-    F <- cometLong()$instrument %in% input$instrument &
-      cometLong()$variable %in% input$cometVariables &
-      input$cometDays[1] <=  difftime(now, cometLong()$Time, units = "days") &
-      difftime(now, cometLong()$Time, units = "days") < input$cometDays[2]
-    
-    if (length(F) > 0)
-      cometLong()[F, ]
-    else
-      NULL
-  }) 
+ 
   
   
   ########### diann -----------
-  wide <- reactive({
+  diannWide <- reactive({
     S <- rootdir() |> 
       file.path("output.txt") |>
       readr::read_delim(
@@ -375,12 +393,15 @@ function(input, output, session) {
     
     S <- S[grepl(input$regex, S$File.Name), ]
     
+    colnames(S)[colnames(S) == "Time"] <- "time"
+    
     S$Instrument <- NA
     S |> .assignInstrument()
   })
   
-  long <- reactive({
-    wide() |> reshape2::melt(id.vars = c("Md5", "File.Name", "Time", "Instrument"))
+  diannLong <- reactive({
+    shiny::req(diannWide())
+    diannWide() |> reshape2::melt(id.vars = c("Md5", "File.Name", "time", "Instrument"))
   })
   
   
@@ -388,26 +409,26 @@ function(input, output, session) {
   instruments <- reactive({
     
     names(.getInstruments())
-   # c(wide()$Instrument |> unique(),
-   #    comet()$instrument |> unique()) |> 
-   #    unique()
+ 
   })
   
   ####### variables -----------
-  variables <- reactive({
-    long()$variable |> unique()
+  diannVariables <- reactive({
+    shiny::req(diannLong())
+    diannLong()$variable |> unique()
   })
    
   # TODO(cp): rename to diannData <-
   diannData <- reactive({
     # shiny::req(input$variables)
     shiny::req(input$instrument)
+    shiny::req(diannLong())
     
     now <- Sys.time()
-    long()[long()$Instrument %in% input$instrument &
-             long()$variable %in% input$variables &
-             input$diannDays[1] <=  difftime(now, long()$Time, units = "days") &
-             difftime(now, long()$Time, units = "days") < input$diannDays[2], ]
+    diannLong()[diannLong()$Instrument %in% input$instrument &
+             diannLong()$variable %in% input$diannVariables &
+             input$diannDays[1] <=  difftime(now, diannLong()$time, units = "days") &
+             difftime(now, diannLong()$time, units = "days") < input$diannDays[2], ]
   }) 
   
   rootdir <- reactive({
@@ -435,7 +456,7 @@ function(input, output, session) {
     on.exit(progress$close())
     
     c(diannData()$File.Name[diannData()$Instrument %in% input$instrument],
-      cometData()$filename.y[comet()$instrument %in% input$instrument]) |>
+      cometData()$File.Name[comet()$Instrument %in% input$instrument]) |>
       unique() |>
       lapply(function(f){
         if(file.exists(file.path(rootdirraw(), f))){return(f)}
@@ -449,22 +470,22 @@ function(input, output, session) {
   })
   
   #  renderUIs =============
+  ## autoQC01TimeSlider ---------------
   output$autoQC01TimeSlider <- renderUI({
-    mintime <- min(autoQC01()$time)
     now <- Sys.time()
     
-    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
-                  round() |>
-                  as.integer())
-    
-    sliderInput("autoQC01Days", "Observation range in days:", min = 0,
-                max = maxtime,
-                value = c(0, min(28, maxtime)), width = "100%")
+    sliderInput("autoQC01TimeRange", "Observation range:",
+                min = min(autoQC01wide()$time),
+                max = now,
+                value = c(now - 7 * 3600 * 24, now),
+                timeFormat = "%F",
+                step = 7,
+                width = "95%")
   })
   
-  
+  ## diannTimeSlider ---------------
   output$diannTimeSlider <- renderUI({
-    mintime <- min(long()$Time)
+    mintime <- min(diannLong()$time)
     now <- Sys.time()
     
     maxtime <- (1 + difftime(now, mintime, units = 'days') |>
@@ -512,10 +533,10 @@ function(input, output, session) {
                       value = c(26, 29), width = "100%"))
   })
   
-  output$variable <- renderUI({
+  output$diannVariable <- renderUI({
     defaulVariables <- c('Precursors.Identified', 'Proteins.Identified', 'FWHM.RT')
-    selectInput('variables', 'Variables',
-                variables(),
+    selectInput('diannVariables', 'Variables',
+                diannVariables(),
                 multiple = TRUE,
                 selected = defaulVariables)
   })
@@ -579,8 +600,7 @@ function(input, output, session) {
     return(L)
   })
   #### renderPlots DIA-NN -------------
-  output$tableDIANN <- renderDataTable({ diannData() })
-  
+  output$tableDIANN <-  DT::renderDataTable({ diannData() })
   output$tableComet <-  DT::renderDataTable({ cometData()  })
   
   output$plotiRTDDAChromatograms <- renderPlot({
@@ -686,7 +706,7 @@ function(input, output, session) {
   })
   output$cometVariable <- renderUI({
     
-    defaulVariables <- c('nConfidentProteins', 'nConfidentPeptide', 'nMS2')
+    defaulVariables <- c('nConfidentProteins', 'nConfidentPeptides', 'nMS2')
     
     selectInput('cometVariables', 'Variables',
                 cometVariables(),
@@ -697,7 +717,7 @@ function(input, output, session) {
   
   #### comet time slider -----------------
   output$cometTimeSlider <- renderUI({
-    mintime <- min(cometLong()$Time)
+    mintime <- min(cometLong()$time)
     now <- Sys.time()
     
     maxtime <- (1 + difftime(now, mintime, units = 'days') |>
@@ -712,50 +732,24 @@ function(input, output, session) {
   output$cometPlot <- renderPlot({
     shiny::req(cometData())
     
-    if (nrow(cometData()) > 0){
-      lattice::xyplot(value ~ Time | variable * instrument,
-                      group = scanType,
-                      data = cometData(),
-                      scales = list(y = list(relation = "free")),
-                      panel = function(x, y, ...){
-                        .iqrPanel(x, y, ...)
-                        try(if (input$useBfabric){
-                          lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time,
-                                                col = '#FF1111')
-                        }, TRUE)
-                      },
-                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgray.",
-                      auto.key = list(space = "bottom"))
-      
-      
-      
-    }else{.missing()}
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Plotting comet data ...")
+    on.exit(progress$close())
+    
+    .lattice(cometData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
+  
   })# height = function(){400 * length(cometData()$instrument |> unique())})
   
   #### DIA-NN lattice::xyplot -----------------
   output$diannPlot <- renderPlot({
     shiny::req(diannData())
     
-    if (nrow(diannData()) > 0){
-      lattice::xyplot(value ~ Time | variable * Instrument,
-                      group = Instrument,
-                      data = diannData(),
-                      scales = list(y = list(relation = "free")),
-                      panel = function(x, y, ...){
-                        .iqrPanel(x, y, ...)
-                        
-                        try(if (input$useBfabric){
-                          lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
-                        }, TRUE)
-                        
-                      },
-                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                      auto.key = list(space = "bottom"))
-    }else{.missing()}
+    .lattice(diannData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
+    
   })#, height = function(){400 * length(diannData()$Instrument |> unique())})
+
   
-  
-  #### DIA-NN lattice::xyplot -----------------
+  #### autoQC01 lattice::xyplot -----------------
   output$autoQC01Plot <- renderPlot({
     shiny::req(autoQC01Data())
     
@@ -763,27 +757,9 @@ function(input, output, session) {
     progress$set(message = "Plotting autoQC01 data ...")
     on.exit(progress$close())
     
-    if (nrow(autoQC01Data())){
-      
-  
-    
-    lattice::xyplot(value ~ time |  variable * Instrument,
-                    group = Instrument,
-                    data = autoQC01Data(),
-                    scales = list(y = list(relation = "free")),
-                    panel = function(x, y, ...){
-                      .iqrPanel(x, y, ...)
-                      try(if (input$useBfabric){
-                        lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
-                      }, TRUE)
-                      
-                    },
-                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                    auto.key = list(space = "bottom"))}else{.missing()}
+    .lattice(autoQC01Data(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
     
   })#, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
-  
-
   
   
   ## plot TICs --------

@@ -15,7 +15,10 @@ dashboardPage(
       menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
-      
+     # selectInput('timeRange', 'time range in days',
+     #              c(1, 2, 7, 14, 30, 60, 90, 180, 365, 2:10*365),
+     #              multiple = FALSE,
+     #              selected = 7),
       selectInput('regex', 'file regex',
                   c(".*", ".*raw$", ".*autoQC.*dia.*raw$", ".*autoQC.*dda.*raw$", "*.zip"),
                   multiple = FALSE,
@@ -43,7 +46,7 @@ dashboardPage(
               fluidRow(box(plotOutput("autoQC01Plot"), height = "55%", width = "100%"))
       ),
       tabItem(tabName = "diannplots",
-              htmlOutput("variable"),
+              htmlOutput("diannVariable"),
               fluidRow(htmlOutput("diannTimeSlider")),
               fluidRow(box(plotOutput("diannPlot"), height = "75%", width = "100%"))
       ),
