@@ -798,12 +798,14 @@ function(input, output, session) {
   })
   
   output$bfabricInstrumentEventsOutput <- renderUI({
-   shiny::req(bfabricInstrumentEvents())
-
+    shiny::req(bfabricInstrumentEventsFiltered())
+    
     if (input$useBfabric){
-      DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+      isolate({
+        DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+      })
     }else{
-     NULL
+      NULL
     }
     
   })
