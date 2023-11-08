@@ -347,10 +347,16 @@ function(input, output, session) {
     shiny::req(cometLong())
     
     now <- Sys.time()
-    cometLong()[cometLong()$instrument %in% input$instrument &
-                  cometLong()$variable %in% input$cometVariables &
-                  input$cometDays[1] <=  difftime(now, cometLong()$Time, units = "days") &
-                  difftime(now, cometLong()$Time, units = "days") < input$cometDays[2], ]
+    
+    F <- cometLong()$instrument %in% input$instrument &
+      cometLong()$variable %in% input$cometVariables &
+      input$cometDays[1] <=  difftime(now, cometLong()$Time, units = "days") &
+      difftime(now, cometLong()$Time, units = "days") < input$cometDays[2]
+    
+    if (length(F) > 0)
+      cometLong()[F, ]
+    else
+      NULL
   }) 
   
   
@@ -380,9 +386,11 @@ function(input, output, session) {
   
   ####### instruments -----------
   instruments <- reactive({
-    c(wide()$Instrument |> unique(),
-      comet()$instrument |> unique()) |> 
-      unique()
+    
+    names(.getInstruments())
+   # c(wide()$Instrument |> unique(),
+   #    comet()$instrument |> unique()) |> 
+   #    unique()
   })
   
   ####### variables -----------
@@ -472,7 +480,7 @@ function(input, output, session) {
   output$instrument <- renderUI({
     L <- (fluidRow(selectInput('instrument', 'Instruments',
                      instruments(),
-                     multiple = TRUE,
+                     multiple = FALSE,
                      selected = instruments()[1])))
     
     if (require(bfabricShiny)){
@@ -703,11 +711,35 @@ function(input, output, session) {
   #### comet lattice::xyplot -----------------
   output$cometPlot <- renderPlot({
     shiny::req(cometData())
-
-    if(cometData() |> nrow() > 0){
+    
+    if (nrow(cometData()) > 0){
       lattice::xyplot(value ~ Time | variable * instrument,
                       group = scanType,
                       data = cometData(),
+                      scales = list(y = list(relation = "free")),
+                      panel = function(x, y, ...){
+                        .iqrPanel(x, y, ...)
+                        try(if (input$useBfabric){
+                          lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time,
+                                                col = '#FF1111')
+                        }, TRUE)
+                      },
+                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgray.",
+                      auto.key = list(space = "bottom"))
+      
+      
+      
+    }else{.missing()}
+  })# height = function(){400 * length(cometData()$instrument |> unique())})
+  
+  #### DIA-NN lattice::xyplot -----------------
+  output$diannPlot <- renderPlot({
+    shiny::req(diannData())
+    
+    if (nrow(diannData()) > 0){
+      lattice::xyplot(value ~ Time | variable * Instrument,
+                      group = Instrument,
+                      data = diannData(),
                       scales = list(y = list(relation = "free")),
                       panel = function(x, y, ...){
                         .iqrPanel(x, y, ...)
@@ -717,32 +749,10 @@ function(input, output, session) {
                         }, TRUE)
                         
                       },
-                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgray.",
+                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                       auto.key = list(space = "bottom"))
-    }
-    else{.missing()}
-  }, height = function(){400 * length(cometData()$instrument |> unique())})
-  
-  #### DIA-NN lattice::xyplot -----------------
-  output$diannPlot <- renderPlot({
-    shiny::req(diannData())
-    
-    lattice::xyplot(value ~ Time | variable * Instrument,
-                    group = Instrument,
-                    data = diannData(),
-                    scales = list(y = list(relation = "free")),
-                    panel = function(x, y, ...){
-                      .iqrPanel(x, y, ...)
-                      
-                      try(if (input$useBfabric){
-                        lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
-                      }, TRUE)
-                      
-                    },
-                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                    auto.key = list(space = "bottom"))
-    
-  }, height = function(){400 * length(diannData()$Instrument |> unique())})
+    }else{.missing()}
+  })#, height = function(){400 * length(diannData()$Instrument |> unique())})
   
   
   #### DIA-NN lattice::xyplot -----------------
@@ -753,7 +763,9 @@ function(input, output, session) {
     progress$set(message = "Plotting autoQC01 data ...")
     on.exit(progress$close())
     
-    te <- as.POSIXct("2023-10-11")
+    if (nrow(autoQC01Data())){
+      
+  
     
     lattice::xyplot(value ~ time |  variable * Instrument,
                     group = Instrument,
@@ -761,16 +773,15 @@ function(input, output, session) {
                     scales = list(y = list(relation = "free")),
                     panel = function(x, y, ...){
                       .iqrPanel(x, y, ...)
-                      
                       try(if (input$useBfabric){
                         lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
                       }, TRUE)
                       
                     },
                     sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                    auto.key = list(space = "bottom"))
+                    auto.key = list(space = "bottom"))}else{.missing()}
     
-  }, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
+  })#, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
   
 
   
