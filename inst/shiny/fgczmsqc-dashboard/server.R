@@ -181,7 +181,7 @@ function(input, output, session) {
         Reduce(f = rbind)  
       
       
-      return(rv)
+      return(rv[order(rv$time), ])
     }
     NULL
   })
