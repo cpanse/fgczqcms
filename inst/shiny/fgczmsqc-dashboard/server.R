@@ -150,7 +150,10 @@ function(input, output, session) {
     progress$set(message = "Reshaping autoQC01 data ...")
     on.exit(progress$close())
     
-    rv <- autoQC01wide() |>
+    filter <- autoQC01wide()$Instrument %in% input$instrument & 
+      input$autoQC01TimeRange[1] <= autoQC01wide()$time & autoQC01wide()$time <= input$autoQC01TimeRange[2]
+    
+    rv <- autoQC01wide()[filter, ] |>
       reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
   })
   
@@ -165,9 +168,8 @@ function(input, output, session) {
     
     message(paste(input$autoQC01Variables, collapse = ';'))
     
-    Filter <- autoQC01Long()$Instrument %in% input$instrument &
-      autoQC01Long()$variable %in% input$autoQC01Variables &
-      input$autoQC01TimeRange[1] <= autoQC01Long()$time & autoQC01Long()$time <= input$autoQC01TimeRange[2]
+    Filter <- autoQC01Long()$variable %in% input$autoQC01Variables 
+      
     
     autoQC01Long()[Filter, ]
   })
