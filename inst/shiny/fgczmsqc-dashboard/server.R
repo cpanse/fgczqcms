@@ -169,7 +169,7 @@ function(input, output, session) {
                                                    as.integer() |> as.list()),
                                     posturl = bfabricposturl)  |>
         lapply( FUN=function(x){
-          if (all(c('description', 'datetime', 'instrumentid', 'instrumenteventtype') %in% names(x))){
+          if (all(c('description', 'datetime') %in% names(x))){
             df <- data.frame(time = x$datetime,
                              instrumentid = as.integer(x$instrument$`_id`),
                              description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
@@ -190,7 +190,11 @@ function(input, output, session) {
     shiny::req(bfabricInstrumentEvents())
     shiny::req(input$instrument)
     
-    instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Filter B-Fabric instrument events ...")
+    on.exit(progress$close())
+    
+    instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
     bfabricInstrumentEvents()[instrumentFilter, ]
   })
   
