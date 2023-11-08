@@ -763,7 +763,7 @@ function(input, output, session) {
    
   
     if (input$useBfabric){
-      instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist())
+      instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
       
       DT::renderDataTable({ bfabricInstrumentEvents()[instrumentFilter, ]  })
     }else{
