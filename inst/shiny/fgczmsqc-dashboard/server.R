@@ -64,8 +64,19 @@ stopifnot(require(readr),
 
 ## hard coded B-Fabric instrumentids
 .getInstruments <- function(){
-  list('QEXACTIVE_1' = 93, 'LUMOS_1' = 214 , 'LUMOS_2' = 252,
-       'EXPLORIS_1' = 253, 'EXPLORIS_2' = 335, 'FUSION_2' = 73)
+  list(EXPLORIS_1 = 253,
+       EXPLORIS_2 = 335,
+       FUSION_1 = -1,
+       FUSION_2 = 73,
+       LUMOS_1 = 214,
+       LUMOS_2 = 252,
+       QEXACTIVEHFX_1 = -1,
+       QEXACTIVEHF_1 = -1,
+       QEXACTIVEHF_2 = -1,
+       QEXACTIVEHF_4 = -1,
+       QEXACTIVE_1 = 93,
+       QEXACTIVE_2 = -1,
+       VELOS_1 = -1)
 }
 
 
