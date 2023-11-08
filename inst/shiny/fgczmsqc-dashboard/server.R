@@ -402,7 +402,7 @@ function(input, output, session) {
     
     if (require(bfabricShiny)){
       L <- tagList(L, fluidRow(checkboxInput('useBfabric',
-                                             'use B-Fabric',
+                                             'show B-Fabric Instrument Events',
                                             value = FALSE)))
     }
          
@@ -654,7 +654,7 @@ function(input, output, session) {
     progress$set(message = "Plotting autoQC01 data ...")
     on.exit(progress$close())
     
-    lattice::xyplot(value ~ time | variable * Instrument,
+    lattice::xyplot(value ~ time |  variable * Instrument,
                     group = Instrument,
                     data = autoQC01Long(),
                     scales = list(y = list(relation = "free")),
@@ -663,6 +663,8 @@ function(input, output, session) {
                     auto.key = list(space = "bottom"))
     
   }, height = function(){400 * length(autoQC01Long()$Instrument |> unique())})
+  
+
   
   
   ## plot TICs --------
@@ -685,6 +687,15 @@ function(input, output, session) {
     shiny::req(rawFileHeader())
     
     capture.output(rawFileHeader())
+  })
+  
+  output$bfabricInstrumentEventsOutput <- renderUI({
+    shiny::req(bfabricInstrumentEvents())
+    
+    if (input$useBfabric){
+      capture.output(bfabricInstrumentEvents())
+    }
+    
   })
   
   #### render sessionInfo ----

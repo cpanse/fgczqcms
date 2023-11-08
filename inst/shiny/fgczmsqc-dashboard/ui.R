@@ -55,7 +55,8 @@ dashboardPage(
       tabItem(tabName = "cometplots",
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
-              fluidRow(box(plotOutput("cometPlot"), height = "75%", width = "100%"))
+              fluidRow(box(plotOutput("cometPlot"), height = "75%", width = "100%")),
+              fluidRow(htmlOutput("bfabricInstrumentEventsOutput"))
       ),
       tabItem(tabName = "cometdata",
               fluidRow(
