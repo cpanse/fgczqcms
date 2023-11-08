@@ -712,7 +712,7 @@ function(input, output, session) {
                         .iqrPanel(x, y, ...)
                         
                         try(if (input$useBfabric){
-                          lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time)
+                          lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
                         }, TRUE)
                         
                       },
