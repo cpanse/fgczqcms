@@ -801,9 +801,9 @@ function(input, output, session) {
     shiny::req(bfabricInstrumentEventsFiltered())
     
     if (input$useBfabric){
-      isolate({
-        DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
-      })
+      # isolate({
+      DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+      # })
     }else{
       NULL
     }
