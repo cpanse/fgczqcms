@@ -170,7 +170,7 @@ function(input, output, session) {
                                     posturl = bfabricposturl)  |>
         lapply( FUN=function(x){
           if (all(c('description', 'datetime') %in% names(x))){
-            df <- data.frame(time = x$datetime,
+            df <- data.frame(time = x$datetime |> as.POSIXlt(),
                              instrumentid = as.integer(x$instrument$`_id`),
                              description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
                              instrumenteventtypeid = x$instrumenteventtype$`_id`)
@@ -194,7 +194,12 @@ function(input, output, session) {
     progress$set(message = "Filter B-Fabric instrument events ...")
     on.exit(progress$close())
     
-    instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
+    now <- Sys.time()
+    
+    instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer()) &
+      difftime(now, comet()$Time, units = "days") < input$cometDays[2] &
+      comet()$instrument %in% input$instrument 
+    
     bfabricInstrumentEvents()[instrumentFilter, ]
   })
   
