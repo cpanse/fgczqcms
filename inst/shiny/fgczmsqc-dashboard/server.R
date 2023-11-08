@@ -80,9 +80,9 @@ stopifnot(require(readr),
 }
 
 
-.assignInstrument <- function(x){
+.assignInstrument <- function(x, coln = 'File.Name'){
   for (i in names(.getInstruments())){
-    idx <- grepl(i, x$File.Name) 
+    idx <- grepl(i, x[[coln]]) 
     x$Instrument[which(idx)] <- i
   }
   x
@@ -102,6 +102,33 @@ stopifnot(require(readr),
 
 # define server logic ============
 function(input, output, session) {
+  ## autoQC01 ---------
+  autoQC01 <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading autoQC01 data ...")
+    on.exit(progress$close())
+    
+    rv <- rootdir() |>
+      file.path("autoQC01.csv") |>
+      readr::read_delim(
+        delim = ";",
+        escape_double = FALSE,           
+        col_types = cols(time = col_datetime(format = "%s"),                       
+                         size = col_integer(),                       
+                         n = col_integer()),
+        trim_ws = TRUE)
+    
+    rv$Instrument <- NA
+    rv |> .assignInstrument(coln = 'filename')
+  })
+  
+  autoQC01Long <- reactive({
+    shiny::req(autoQC01())
+    
+    rv <- autoQC01() |>
+      reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
+  })
+  
   #  reactives =============
   bfabricInstrumentEvents <- reactive({
     shiny::req(input$useBfabric)
@@ -617,6 +644,25 @@ function(input, output, session) {
                     auto.key = list(space = "bottom"))
     
   }, height = function(){400 * length(diannData()$Instrument |> unique())})
+  
+  
+  #### DIA-NN lattice::xyplot -----------------
+  output$autoQC01Plot <- renderPlot({
+    shiny::req(autoQC01Long())
+    
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Plotting autoQC01 data ...")
+    on.exit(progress$close())
+    
+    lattice::xyplot(value ~ time | variable * Instrument,
+                    group = Instrument,
+                    data = autoQC01Long(),
+                    scales = list(y = list(relation = "free")),
+                    panel = .iqrPanel,
+                    #sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                    auto.key = list(space = "bottom"))
+    
+  }, height = function(){400 * length(autoQC01Long()$Instrument |> unique())})
   
   
   ## plot TICs --------

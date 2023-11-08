@@ -6,6 +6,7 @@ dashboardPage(
   dashboardHeader(title = "FCGZ MS QC"),
   dashboardSidebar(
     sidebarMenu(
+      menuItem("autoQC01", tabName = "autoQC01Plots", icon = icon("chart-line"), badgeLabel = "new", badgeColor = "green"),
       menuItem("DIA-NN stat", tabName = "diannplots", icon = icon("chart-line")),
       menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
       menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
@@ -35,13 +36,16 @@ dashboardPage(
   dashboardBody(
     # Boxes need to be put in a row (or column)
     tabItems(
-      # First tab content
+      tabItem(tabName = "autoQC01Plots",
+              fluidRow(h2("autoQC01")),
+              #fluidRow(htmlOutput("autoQC01TimeSlider")),
+              fluidRow(box(plotOutput("autoQC01Plot"), height = "55%", width = "100%"))
+      ),
       tabItem(tabName = "diannplots",
               htmlOutput("variable"),
               fluidRow(htmlOutput("diannTimeSlider")),
               fluidRow(box(plotOutput("diannPlot"), height = "75%", width = "100%"))
       ),
-      # Second tab content
       tabItem(tabName = "dianndata",
               fluidRow(
                 h2("DIA-NN stat.tsv"),
