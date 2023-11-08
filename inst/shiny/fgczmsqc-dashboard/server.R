@@ -452,13 +452,14 @@ function(input, output, session) {
   files <- reactive({
     shiny::req(diannData())
     shiny::req(cometData())
+    shiny::req(autoQC01Long())
 
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Composing file list ...")
     on.exit(progress$close())
     
-    c(diannData()$File.Name[diannData()$Instrument %in% input$instrument],
-      cometData()$File.Name[comet()$Instrument %in% input$instrument]) |>
+    c((diannData()$File.Name|>unique()),
+      (cometData()$File.Name|>unique())) |>
       unique() |>
       lapply(function(f){
         if(file.exists(file.path(rootdirraw(), f))){return(f)}
@@ -501,19 +502,23 @@ function(input, output, session) {
   
   
   output$instrument <- renderUI({
-    L <- (fluidRow(selectInput('instrument', 'Instruments',
-                     instruments(),
-                     multiple = FALSE,
-                     selected = instruments()[1])))
-    
-    if (require(bfabricShiny)){
-      L <- tagList(L, fluidRow(checkboxInput('useBfabric',
-                                             'show B-Fabric Instrument Events',
-                                            value = FALSE)))
-    }
-         
-    return(L)
+    fluidRow(selectInput('instrument', 'Instruments',
+                              instruments(),
+                              multiple = FALSE,
+                              selected = instruments()[1]))
   })
+  
+  output$useBfabric <- renderUI({
+    if (require(bfabricShiny)){
+      L <- fluidRow(checkboxInput('useBfabric',
+                                 'show B-Fabric Instrument Events',
+                                 value = FALSE))
+      return(L)
+    }
+    NULL
+  })
+
+
   
   output$scanTypeUI <- renderUI({
     shiny::req(scanType())

@@ -15,6 +15,7 @@ dashboardPage(
       menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
+      htmlOutput("useBfabric"),
      # selectInput('timeRange', 'time range in days',
      #              c(1, 2, 7, 14, 30, 60, 90, 180, 365, 2:10*365),
      #              multiple = FALSE,
