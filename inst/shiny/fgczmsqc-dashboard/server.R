@@ -731,7 +731,14 @@ function(input, output, session) {
                     group = Instrument,
                     data = diannData(),
                     scales = list(y = list(relation = "free")),
-                    panel = .iqrPanel,
+                    panel = function(x, y, ...){
+                      .iqrPanel(x, y, ...)
+                      
+                      try(if (input$useBfabric){
+                        lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
+                      }, TRUE)
+                      
+                    },
                     sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                     auto.key = list(space = "bottom"))
     
@@ -754,7 +761,11 @@ function(input, output, session) {
                     scales = list(y = list(relation = "free")),
                     panel = function(x, y, ...){
                       .iqrPanel(x, y, ...)
-                      lattice::panel.abline(v=te)
+                      
+                      try(if (input$useBfabric){
+                        lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
+                      }, TRUE)
+                      
                     },
                     sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                     auto.key = list(space = "bottom"))
