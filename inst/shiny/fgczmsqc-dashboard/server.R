@@ -162,18 +162,21 @@ function(input, output, session) {
     on.exit(progress$close())
     
     if(input$useBfabric){
-      bfabricShiny::readPages(login,
-                              webservicepassword,
-                              endpoint = 'instrumentevent',
-                              query = list(instrumentid = .getInstruments() |>
-                                             as.integer() |> as.list()),
-                              posturl = bfabricposturl)  |>
-        lapply(rv, FUN=function(x){
-          try({data.frame(time = x$datetime,
-                          instrumentid = x$instrument$`_id`,
-                          description = x$description,
-                          instrumenteventtypeid = x$instrumenteventtype$`_id`) }, TRUE) 
-          
+      rv <- bfabricShiny::readPages(login,
+                                    webservicepassword,
+                                    endpoint = 'instrumentevent',
+                                    query = list(instrumentid = .getInstruments() |>
+                                                   as.integer() |> as.list()),
+                                    posturl = bfabricposturl)  |>
+        lapply( FUN=function(x){
+          if (all(c('description', 'datetime', 'instrumentid', 'instrumenteventtype') %in% names(x))){
+            df <- data.frame(time = x$datetime,
+                             instrumentid = as.integer(x$instrument$`_id`),
+                             description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
+                             instrumenteventtypeid = x$instrumenteventtype$`_id`)
+            return(df)
+          }
+          NULL
         }) |>
         Reduce(f = rbind)  
       
