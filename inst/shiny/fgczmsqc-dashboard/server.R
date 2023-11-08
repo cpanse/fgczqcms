@@ -139,7 +139,11 @@ function(input, output, session) {
                               endpoint = 'instrumentevent',
                               query = list(instrumentid = .getInstruments() |>
                                              as.integer() |> as.list()),
-                              posturl = bfabricposturl)
+                              posturl = bfabricposturl) |>
+        lapply(FUN=function(x){list(time = x$datetime,
+                                    instrumentid = x$instrument$`_id`,
+                                    description = x$description)})|>
+        Reduce(f = rbind)
       
       return(rv)
     }
@@ -693,7 +697,7 @@ function(input, output, session) {
     shiny::req(bfabricInstrumentEvents())
     
     if (input$useBfabric){
-      capture.output(bfabricInstrumentEvents())
+      DT::renderDataTable({ bfabricInstrumentEvents()  })
     }
     
   })
