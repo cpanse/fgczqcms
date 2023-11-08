@@ -152,6 +152,8 @@ function(input, output, session) {
   })
   
   #  reactives =============
+  
+  ## bfabricInstrumentEvents  -------------
   bfabricInstrumentEvents <- reactive({
     shiny::req(input$useBfabric)
     
@@ -750,11 +752,13 @@ function(input, output, session) {
   output$bfabricInstrumentEventsOutput <- renderUI({
    shiny::req(bfabricInstrumentEvents())
    shiny::req(input$instrument)
-    
+   
+   
+  
     if (input$useBfabric){
       instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist())
       
-      DT::renderDataTable({ bfabricInstrumentEvents()  })
+      DT::renderDataTable({ bfabricInstrumentEvents()[instrumentFilter,]  })
     }else{
      NULL
     }
@@ -763,6 +767,8 @@ function(input, output, session) {
   
   #### render sessionInfo ----
   output$sessionInfo <- renderPrint({
+    (.getInstruments()[input$instrument] |> unlist() |> paste(collapse = ";") |> message())
+    
     capture.output(sessionInfo())
   })
   
