@@ -162,16 +162,20 @@ function(input, output, session) {
     on.exit(progress$close())
     
     if(input$useBfabric){
-      rv <- bfabricShiny::readPages(login,
+      bfabricShiny::readPages(login,
                               webservicepassword,
                               endpoint = 'instrumentevent',
                               query = list(instrumentid = .getInstruments() |>
                                              as.integer() |> as.list()),
-                              posturl = bfabricposturl) |>
-        lapply(FUN=function(x){data.frame(time = x$datetime,
-                                    instrumentid = x$instrument$`_id`,
-                                    description = x$description)})|>
-        Reduce(f = rbind) 
+                              posturl = bfabricposturl)  |>
+        lapply(rv, FUN=function(x){
+          try({data.frame(time = x$datetime,
+                          instrumentid = x$instrument$`_id`,
+                          description = x$description,
+                          instrumenteventtypeid = x$instrumenteventtype$`_id`) }, TRUE) 
+          
+        }) |>
+        Reduce(f = rbind)  
       
       return(rv)
     }
@@ -758,7 +762,7 @@ function(input, output, session) {
     if (input$useBfabric){
       instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist())
       
-      DT::renderDataTable({ bfabricInstrumentEvents()[instrumentFilter,]  })
+      DT::renderDataTable({ bfabricInstrumentEvents()[instrumentFilter, ]  })
     }else{
      NULL
     }
