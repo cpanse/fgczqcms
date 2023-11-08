@@ -697,7 +697,7 @@ function(input, output, session) {
     shiny::req(bfabricInstrumentEvents())
     
     if (input$useBfabric){
-      DT::renderDataTable({ bfabricInstrumentEvents()  })
+      DT::dataTableOutput(DT::renderDataTable({ bfabricInstrumentEvents()  }))
     }
     
   })
