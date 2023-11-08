@@ -168,10 +168,10 @@ function(input, output, session) {
                               query = list(instrumentid = .getInstruments() |>
                                              as.integer() |> as.list()),
                               posturl = bfabricposturl) |>
-        lapply(FUN=function(x){list(time = x$datetime,
+        lapply(FUN=function(x){data.frame(time = x$datetime,
                                     instrumentid = x$instrument$`_id`,
                                     description = x$description)})|>
-        Reduce(f = rbind)
+        Reduce(f = rbind) 
       
       return(rv)
     }
