@@ -56,7 +56,7 @@ stopifnot(require(readr),
   
   filter <- ((q[1] - 1.5 * iqr) < y & y < (q[3] + 1.5 * iqr))
   idx <- order(x[filter])
-  
+  # lattice::panel.abline(...)
   lattice::panel.xyplot(x[filter][idx], y[filter][idx], ..., type = 'b', pch=16)
   lattice::panel.xyplot(x[!filter], y[!filter], ..., type = 'p', col='lightgrey')
 }
@@ -708,7 +708,14 @@ function(input, output, session) {
                       group = scanType,
                       data = cometData(),
                       scales = list(y = list(relation = "free")),
-                      panel = .iqrPanel,
+                      panel = function(x, y, ...){
+                        .iqrPanel(x, y, ...)
+                        
+                        try(if (input$useBfabric){
+                          lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time)
+                        }, TRUE)
+                        
+                      },
                       sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgray.",
                       auto.key = list(space = "bottom"))
     }
@@ -738,11 +745,16 @@ function(input, output, session) {
     progress$set(message = "Plotting autoQC01 data ...")
     on.exit(progress$close())
     
+    te <- as.POSIXct("2023-10-11")
+    
     lattice::xyplot(value ~ time |  variable * Instrument,
                     group = Instrument,
                     data = autoQC01Data(),
                     scales = list(y = list(relation = "free")),
-                    panel = .iqrPanel,
+                    panel = function(x, y, ...){
+                      .iqrPanel(x, y, ...)
+                      lattice::panel.abline(v=te)
+                    },
                     sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                     auto.key = list(space = "bottom"))
     
