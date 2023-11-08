@@ -180,9 +180,18 @@ function(input, output, session) {
         }) |>
         Reduce(f = rbind)  
       
+      
       return(rv)
     }
     NULL
+  })
+  
+  bfabricInstrumentEventsFiltered <- reactive({
+    shiny::req(bfabricInstrumentEvents())
+    shiny::req(input$instrument)
+    
+    instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
+    bfabricInstrumentEvents()[instrumentFilter, ]
   })
   
   rawFileHeader <- reactive({
@@ -758,14 +767,9 @@ function(input, output, session) {
   
   output$bfabricInstrumentEventsOutput <- renderUI({
    shiny::req(bfabricInstrumentEvents())
-   shiny::req(input$instrument)
-   
-   
-  
+
     if (input$useBfabric){
-      instrumentFilter <- bfabricInstrumentEvents()$instrumentid %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer())
-      
-      DT::renderDataTable({ bfabricInstrumentEvents()[instrumentFilter, ]  })
+      DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
     }else{
      NULL
     }
