@@ -790,7 +790,10 @@ function(input, output, session) {
                      group = method,
                      data = summaryData(),
                      alpha = 0.1,
-                     pch = 16, layout = c(1, 3))
+                     bty="n",
+                     cex = 2,
+                     pch = 22,
+                     layout = c(1, 3))
     
   }, height = 700)
   
