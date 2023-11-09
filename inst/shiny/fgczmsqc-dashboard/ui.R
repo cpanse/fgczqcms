@@ -41,7 +41,7 @@ dashboardPage(
     # Boxes need to be put in a row (or column)
     tabItems(
       tabItem(tabName = "autoQC01Plots",
-              fluidRow(h2("autoQC01")),
+              fluidRow(h2("autoQC01 - Biognosys iRT peptides")),
               fluidRow(htmlOutput("autoQC01Variable")),
               fluidRow(htmlOutput("autoQC01TimeSlider")), # fluidRow(htmlOutput("bfabricInstrumentEventsOutput")),
               fluidRow(box(plotOutput("autoQC01Plot"), height = "55%", width = "100%"))
