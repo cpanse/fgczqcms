@@ -181,7 +181,7 @@ function(input, output, session) {
     #shiny::req(input$useBfabric)
     
     progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Fetching", details = "B-Fabric instrument events ...")
+    progress$set(message = "Fetching B-Fabric instrument events ...")
     on.exit(progress$close())
     
     if(input$useBfabric){
