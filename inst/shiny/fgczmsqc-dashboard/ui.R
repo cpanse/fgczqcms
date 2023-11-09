@@ -10,7 +10,7 @@ dashboardPage(
       menuItem("DIA-NN stat", tabName = "diannplots", icon = icon("chart-line")),
       menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
       menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
-      menuItem("DDA-comet stat data", tabName = "cometdata", icon = icon("table")),
+      menuItem("Summary", tabName = "summary", icon = icon("table")),
       hr(),
       menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
@@ -59,15 +59,20 @@ dashboardPage(
               )
       ),
       tabItem(tabName = "cometplots",
+              h2("Identification using comet"),
               fluidRow(htmlOutput("cometVariable")),
-              fluidRow(htmlOutput("cometTimeSlider")),fluidRow(htmlOutput("bfabricInstrumentEventsOutput")),
+              fluidRow(htmlOutput("cometTimeSlider")),
+              fluidRow(htmlOutput("bfabricInstrumentEventsOutput")),
               fluidRow(box(plotOutput("cometPlot"), width = "100%"))
               
       ),
-      tabItem(tabName = "cometdata",
+      tabItem(tabName = "summary",
               fluidRow(
-                h2("comet RData"),
-                fluidRow(DT::dataTableOutput('tableComet'))
+                h2("Summary"),
+                HTML("MS QC event frequency in numbers and graphics"),
+                fluidRow(box(verbatimTextOutput("summary"), width = 800)),
+                fluidRow(box(plotOutput("plotSummary"), width = "95%") ),
+                
               )
       ),
       tabItem(tabName = "rawFile",

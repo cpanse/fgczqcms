@@ -327,9 +327,6 @@ function(input, output, session) {
     
     e$comet$assignmentRate <- round (100 * e$comet$nConfidentPSM / e$comet$nPSM)
     
-    
-    
-    
     ## rename columns
     colnames(e$comet)[colnames(e$comet) == "filename.y"] <- "File.Name"
     colnames(e$comet)[colnames(e$comet) == "Time"] <- "time"
@@ -341,16 +338,16 @@ function(input, output, session) {
             'nDecoyProteins', 'nConfidentProteins', 'fdrPSM', 'fdrPeptide',
             'fdrProtein',  'size',   'nMS2', 'TIC')
     e$comet$time <- as.POSIXct(e$comet$time )
-    e$comet[grepl(input$regex, e$comet$File.Name), cc]
+    e$comet[, cc]
   })
-  
-  
   
   cometLong <- reactive({
     shiny::req(cometWide())
     rv <- cometWide() |>
       reshape2::melt(id.vars = c("md5", "File.Name", "time", "Instrument",
                                  "scanType"))
+    
+    rv[grepl(input$regex, rv$File.Name), ]
   })
   
   cometData <- reactive({
@@ -769,6 +766,40 @@ function(input, output, session) {
   })#, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
   
   
+  ## Summary ============
+  summaryData <- reactive({
+    d1 <- data.frame(time = autoQC01wide()$time, Instrument = autoQC01wide()$Instrument,
+                     method = "Biognosys iRT (autoQC01)")
+    
+    d2 <- data.frame(time = cometWide()$time, Instrument = cometWide()$Instrument,
+                     method = "DDA (comet)")
+    
+    d3 <- data.frame(time = diannWide()$time, Instrument = diannWide()$Instrument,
+                     method = "DIA (DIA-NN)")
+    
+    
+    (list(d1, d2, d3) |>
+        Reduce(f = rbind))
+  })
+  
+  ## plotSummary --------
+  output$plotSummary  <- renderPlot({
+    shiny::req(summaryData())
+  
+    lattice::dotplot(Instrument ~ time | method,
+                     group = method,
+                     data = summaryData(),
+                     alpha = 0.1,
+                     pch = 16, layout = c(1, 3))
+    
+  }, height = 700)
+  
+  ## printSummary --------
+  output$summary <- renderPrint({
+    capture.output( table(summaryData()$method, summaryData()$Instrument))
+  })
+    
+  
   ## plot TICs --------
   output$plotTIC <- renderPlot({
     shiny::req(ticData())
@@ -792,12 +823,11 @@ function(input, output, session) {
   })
   
   output$bfabricInstrumentEventsOutput <- renderUI({
+    shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEventsFiltered())
     
     if (input$useBfabric){
-      # isolate({
       DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
-      # })
     }else{
       NULL
     }
