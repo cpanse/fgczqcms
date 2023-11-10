@@ -1,4 +1,5 @@
 #R
+## Christian Panse <cp@fgcz.ethz.ch> 2023-11-09
 ## server
 
 # requirements ===========
@@ -7,10 +8,6 @@ stopifnot(require(readr),
           require(shinydashboard),
           require(lattice),
           require(rawrr))
-
-#stopifnot(require(bfabricShiny))
-
-
 
 .plotChromatogramSet <- function (x, diagnostic = FALSE, ...) 
 {
@@ -651,13 +648,12 @@ function(input, output, session) {
   
   output$ticFileInput <- renderUI({
     shiny::req(files())
-    
-    L <- list(selectInput('ticfile', 'TIC file candidates',
-                          files(),
-                          multiple = TRUE,
-                          selected = files()[1]),
-              hr())
-    
+   
+      L <- tagList(selectInput('ticfile', 'TIC file candidates',
+                            files(),
+                            multiple = TRUE,
+                            selected = files()[1]),
+                hr())
     
     return(L)
   })
@@ -666,17 +662,19 @@ function(input, output, session) {
     shiny::req(files())
     
     L <- tagList(fluidRow(box(selectInput('file', 'Files',
-                          files(),
-                          multiple = FALSE,
-                          selected = files()[1])), width = "100%"),
-              fluidRow(checkboxInput("showRawFileHeader", "show raw File Header", value = FALSE)),
-              fluidRow(checkboxInput("showIrtMS1Profile", "show iRT Ms Profile", value = FALSE)),
-              fluidRow(checkboxInput("showIrtMS2Profile", "show iRT Ms2 Profile" , value = FALSE)))
-   return(L)
+                                          files(),
+                                          multiple = FALSE,
+                                          selected = files()[1])), width = "100%"),
+                 fluidRow(checkboxInput("showRawFileHeader", "show raw File Header", value = FALSE)),
+                 fluidRow(checkboxInput("showIrtMS1Profile", "show iRT Ms Profile", value = FALSE)),
+                 fluidRow(checkboxInput("showIrtMS2Profile", "show iRT Ms2 Profile" , value = FALSE)))
+    return(L)
+    
   })
   
   ### render fileOutput -----------
   output$fileOutput <- renderUI({
+    shiny::req(files())
     L <- tagList()
     
     if (input$showRawFileHeader){
@@ -934,20 +932,18 @@ function(input, output, session) {
                      group = instrumenteventtypeid,
                      layout = c(1, n),
                      data = bfabricInstrumentEvents(),
-                     #alpha = 0.8,
                      cex = 1,
                      pch = 22,
                      auto.key = list(space = "right", pch=22),
                      main = 'B-Fabric instrument events grouped by event type',
-                     )
+    )
   })
   
   ## printSummary --------
   output$summary <- renderPrint({
     capture.output( table(summaryData()$method, summaryData()$Instrument))
   })
-    
-  
+
   ## plot TICs --------
   output$plotTIC <- renderPlot({
     shiny::req(ticData())
@@ -960,16 +956,14 @@ function(input, output, session) {
     
     ticData() |> lapply(function(x){plot(x)})
   }, height = function(){300 * length(input$ticfile)})
-  
-  
-  
+
   #### render rawFileHeader  ----
   output$rawFileHeader <- renderPrint({
     shiny::req(rawFileHeader())
     capture.output(rawFileHeader())
   })
   
-  output$bfabricInstrumentEventsOutput <- renderUI({
+  output$autoQC01BfabricInstrumentEventsOutput <- renderUI({
     shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEventsFiltered())
     
@@ -978,7 +972,17 @@ function(input, output, session) {
     }else{
       NULL
     }
+  })
+  
+  output$cometBfabricInstrumentEventsOutput <- renderUI({
+    shiny::req(input$useBfabric)
+    shiny::req(bfabricInstrumentEventsFiltered())
     
+    if (input$useBfabric){
+      DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+    }else{
+      NULL
+    }
   })
   
   #### render sessionInfo ----
@@ -987,6 +991,4 @@ function(input, output, session) {
     
     capture.output(sessionInfo())
   })
-  
-  
 }

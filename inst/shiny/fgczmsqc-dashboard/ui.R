@@ -45,7 +45,8 @@ dashboardPage(
       tabItem(tabName = "autoQC01Plots",
               fluidRow(h2("autoQC01 - Biognosys iRT peptides")),
               fluidRow(htmlOutput("autoQC01Variable")),
-              fluidRow(htmlOutput("autoQC01TimeSlider")), # fluidRow(htmlOutput("bfabricInstrumentEventsOutput")),
+              fluidRow(htmlOutput("autoQC01TimeSlider")), 
+              fluidRow(htmlOutput("autoQC01BfabricInstrumentEventsOutput")),
               fluidRow(box(plotOutput("autoQC01Plot"), height = "55%", width = "100%"))
       ),
       tabItem(tabName = "diannplots",
@@ -64,7 +65,7 @@ dashboardPage(
               h2("Identification using comet"),
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
-              fluidRow(htmlOutput("bfabricInstrumentEventsOutput")),
+              fluidRow(htmlOutput("cometBfabricInstrumentEventsOutput")),
               fluidRow(box(plotOutput("cometPlot"), width = "100%"))
               
       ),
