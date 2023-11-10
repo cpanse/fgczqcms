@@ -918,16 +918,10 @@ function(input, output, session) {
     
     trellis.par.set("superpose.symbol", superpose.symbol())
     
-    lattice::xyplot(size ~ time | method,
-                    panel = function(x, y, ...) {
-                      idx <- order(x)
-                      panel.xyplot(x[idx], cumsum(y[idx]), ...)
-                    },
-                    ylim=c(0,sum(summaryData()$size)),
-                    groups = method,
-                    data = summaryData(),
-                    type = 'l',
-                    main = 'cumulated file size')
+    
+    barchart(size/1024^3 ~ format(time, "%Y-%m") | method, data = summaryData(), layout=c(1,3),
+             scales=list(x=list(rot=45)))
+  
   })
   
   output$plotSummaryBfabricEvents <- renderPlot({
@@ -972,7 +966,6 @@ function(input, output, session) {
   #### render rawFileHeader  ----
   output$rawFileHeader <- renderPrint({
     shiny::req(rawFileHeader())
-    
     capture.output(rawFileHeader())
   })
   
