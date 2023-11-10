@@ -71,8 +71,8 @@ dashboardPage(
                 h2("Summary"),
                 HTML("MS QC event frequency in numbers and graphics"),
                 fluidRow(box(verbatimTextOutput("summary"), width = 800)),
-                fluidRow(box(plotOutput("plotSummary"), width = "95%") ),
-                
+                fluidRow(box(plotOutput("plotSummary", height = 600), width = "95%")),
+                fluidRow(box(plotOutput("plotSummaryCumsum", height = 250), width = "50%") ),
               )
       ),
       tabItem(tabName = "rawFile",

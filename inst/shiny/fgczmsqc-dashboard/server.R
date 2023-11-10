@@ -73,7 +73,6 @@ stopifnot(require(readr),
                       try(if (useBfabric){
                         lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
                       }, TRUE)
-                      
                     },
                     sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
                     auto.key = list(space = "bottom"))
@@ -772,13 +771,19 @@ function(input, output, session) {
   
   ## Summary ============
   summaryData <- reactive({
-    d1 <- data.frame(time = autoQC01wide()$time, Instrument = autoQC01wide()$Instrument,
+    d1 <- data.frame(time = autoQC01wide()$time,
+                     size = autoQC01wide()$size,
+                     Instrument = autoQC01wide()$Instrument,
                      method = "Biognosys iRT (autoQC01)")
     
-    d2 <- data.frame(time = cometWide()$time, Instrument = cometWide()$Instrument,
+    d2 <- data.frame(time = cometWide()$time,
+                     size = cometWide()$size,
+                     Instrument = cometWide()$Instrument,
                      method = "DDA (comet)")
     
-    d3 <- data.frame(time = diannWide()$time, Instrument = diannWide()$Instrument,
+    d3 <- data.frame(time = diannWide()$time,
+                     size = diannWide()$Size,
+                     Instrument = diannWide()$Instrument,
                      method = "DIA (DIA-NN)")
     
     
@@ -786,26 +791,48 @@ function(input, output, session) {
         Reduce(f = rbind))
   })
   
+  superpose.symbol <- reactive({
+    t <- trellis.par.get("superpose.symbol")
+    cm <- c("#94C6FF", "#FFBBA9", "#76E3B8", "#FFD6AD", 
+            "#BCE1FF", "#FFF691", "#FFC1E1")
+    t$col <- cm
+    t$fill <- cm
+    
+    return(t)
+  })
+  
   ## plotSummary --------
   output$plotSummary  <- renderPlot({
     shiny::req(summaryData())
-    
-    t <- trellis.par.get("superpose.symbol")
-    cm <- c("#94C6FF", "#FFBBA9", "#76E3B8", "#FFD6AD", 
-             "#BCE1FF", "#FFF691", "#FFC1E1")
-    t$col <- cm
-    t$fill <- cm
-    trellis.par.set("superpose.symbol", t)
+   
+    trellis.par.set("superpose.symbol", superpose.symbol())
     
     lattice::dotplot(Instrument ~ time | method,
-                     group = method,
+                     groups = method,
                      data = summaryData(),
                      alpha = 0.2,
                      cex = 2.4,
                      pch = 22,
-                     layout = c(1, 3))
+                     layout = c(1, 3),
+                     main = "instrument events")
+  })
+  
+  output$plotSummaryCumsum  <- renderPlot({
+    shiny::req(summaryData())
     
-  }, height = 700)
+    trellis.par.set("superpose.symbol", superpose.symbol())
+    
+    lattice::xyplot(size ~ time | method,
+                    panel = function(x, y, ...) {
+                      idx <- order(x)
+                      panel.xyplot(x[idx], cumsum(y[idx]), ...)
+                    },
+                    ylim=c(0,sum(summaryData()$size)),
+                    groups = method,
+                    data = summaryData(),
+                    type = 'l',
+                    main = 'cumulated file size')
+  })
   
   ## printSummary --------
   output$summary <- renderPrint({
