@@ -86,18 +86,18 @@ stopifnot(require(readr),
 
 ## hard coded B-Fabric instrumentids
 .getInstruments <- function(){
-  list(EXPLORIS_1 = 253,
-       EXPLORIS_2 = 335,
-       FUSION_1 = -1,
-       FUSION_2 = 73,
-       LUMOS_1 = 214,
+  list(EXPLORIS_2 = 335,
+       EXPLORIS_1 = 253,
        LUMOS_2 = 252,
+       LUMOS_1 = 214,
+       QEXACTIVE_1 = 93,
+       FUSION_2 = 73,
        QEXACTIVEHFX_1 = -1,
        QEXACTIVEHF_1 = -1,
        QEXACTIVEHF_2 = -1,
        QEXACTIVEHF_4 = -1,
-       QEXACTIVE_1 = 93,
        QEXACTIVE_2 = -1,
+       FUSION_1 = -1,
        VELOS_1 = -1)
 }
 
@@ -440,9 +440,7 @@ function(input, output, session) {
   
   ####### instruments -----------
   instruments <- reactive({
-    
     names(.getInstruments())
- 
   })
   
   ####### variables -----------
