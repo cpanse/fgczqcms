@@ -155,10 +155,10 @@ function(input, output, session) {
     progress$set(message = "Reshaping autoQC01 data ...")
     on.exit(progress$close())
     
-    filter <- autoQC01wide()$Instrument %in% input$instrument & 
+    autoQC01LongFilter <- autoQC01wide()$Instrument %in% input$instrument & 
       input$autoQC01TimeRange[1] <= autoQC01wide()$time & autoQC01wide()$time <= input$autoQC01TimeRange[2]
     
-    rv <- autoQC01wide()[filter, ] |>
+    rv <- autoQC01wide()[autoQC01LongFilter, ] |>
       reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
   })
   
@@ -173,10 +173,10 @@ function(input, output, session) {
     
     message(paste(input$autoQC01Variables, collapse = ';'))
     
-    Filter <- autoQC01Long()$variable %in% input$autoQC01Variables 
+    autoQC01LongFilter <- autoQC01Long()$variable %in% input$autoQC01Variables 
       
     
-    autoQC01Long()[Filter, ]
+    autoQC01Long()[autoQC01LongFilter, ]
   })
   
   
@@ -370,14 +370,13 @@ function(input, output, session) {
     
     now <- Sys.time()
     
-    filter <- cometLong()$Instrument %in% input$instrument &
+    cometFilter <- cometLong()$Instrument %in% input$instrument &
       cometLong()$variable %in% input$cometVariables &
-      input$cometDays[1] <=  difftime(now, cometLong()$time, units = "days") &
-      difftime(now, cometLong()$time, units = "days") < input$cometDays[2]
+      input$cometTimeRange[1] <= cometLong()$time & cometLong()$time <= input$cometTimeRange[2]
+  
+     message(paste0("comet filter length: ", sum(cometFilter)))
     
-    message(paste0("comet filter length: ", sum(filter)))
-    
-    cometLong()[filter, ]
+    cometLong()[cometFilter, ]
   }) 
   
   autoQC01Variables <- reactive({
@@ -483,13 +482,20 @@ function(input, output, session) {
       unlist() 
   })
   
+  vals <- reactiveValues(timeRange = -1)
+  
+  observe({
+      req(input$timeRange)
+      vals$timeRange <- as.integer(input$timeRange)
+    })
+  
   #  renderUIs =============
-  ## autoQC01TimeSlider ---------------
+  ## TimeSliders ---------------
   output$autoQC01TimeSlider <- renderUI({
     now <- Sys.time()
     
     sliderInput("autoQC01TimeRange", "Observation range:",
-                min = min(autoQC01wide()$time),
+                min = (now - (vals$timeRange * 3600 * 24)),
                 max = now,
                 value = c(now - 7 * 3600 * 24, now),
                 timeFormat = "%F",
@@ -497,7 +503,20 @@ function(input, output, session) {
                 width = "95%")
   })
   
-  ## diannTimeSlider ---------------
+  output$cometTimeSlider <- renderUI({
+    mintime <- min(cometLong()$time)
+    now <- Sys.time()
+    
+    sliderInput("cometTimeRange", "Observation range:", 
+                min = (now - (vals$timeRange * 3600 * 24)),
+                max = now,
+                value = c(now - 7 * 3600 * 24, now),
+                timeFormat = "%F",
+                step = 7,
+                width = "95%")
+  })
+  
+
   output$diannTimeSlider <- renderUI({
     mintime <- min(diannLong()$time)
     now <- Sys.time()
@@ -722,6 +741,8 @@ function(input, output, session) {
                 selected = defaulVariables)
     
   })
+  
+  
   output$cometVariable <- renderUI({
     
     defaulVariables <- c('nConfidentProteins', 'nConfidentPeptides', 'nMS2')
@@ -733,19 +754,7 @@ function(input, output, session) {
     
   })
   
-  #### comet time slider -----------------
-  output$cometTimeSlider <- renderUI({
-    mintime <- min(cometLong()$time)
-    now <- Sys.time()
-    
-    maxtime <- (1 + difftime(now, mintime, units = 'days') |>
-                  round() |>
-                  as.integer())
-    
-    sliderInput("cometDays", "Observation range in days:", min = 0,
-                max = maxtime,
-                value = c(0, min(maxtime, 28)), width = "100%")
-  })
+  
   #### comet lattice::xyplot -----------------
   output$cometPlot <- renderPlot({
     shiny::req(cometData())
@@ -754,7 +763,10 @@ function(input, output, session) {
     progress$set(message = "Plotting comet data ...")
     on.exit(progress$close())
     
-    .lattice(cometData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time, group = scanType)
+    .lattice(cometData(),
+             useBfabric = input$useBfabric,
+             bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time,
+             group = scanType)
   
   })# height = function(){400 * length(cometData()$instrument |> unique())})
   
