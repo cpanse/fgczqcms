@@ -149,16 +149,18 @@ function(input, output, session) {
   })
   
   autoQC01Long <- reactive({
+    shiny::req(input$instrument)
     shiny::req(autoQC01wide())
+    shiny::req(input$autoQC01TimeRange)
     
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Reshaping autoQC01 data ...")
     on.exit(progress$close())
     
-    autoQC01LongFilter <- autoQC01wide()$Instrument %in% input$instrument & 
-      input$autoQC01TimeRange[1] <= autoQC01wide()$time & autoQC01wide()$time <= input$autoQC01TimeRange[2]
+    autoQC01wideFilter <- autoQC01wide()$Instrument %in% input$instrument & 
+      vals$timeMin < autoQC01wide()$time & autoQC01wide()$time < vals$timeMax
     
-    rv <- autoQC01wide()[autoQC01LongFilter, ] |>
+    rv <- autoQC01wide()[autoQC01wideFilter, ] |>
       reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
   })
   
@@ -171,7 +173,7 @@ function(input, output, session) {
     
     now <- Sys.time()
     
-    message(paste(input$autoQC01Variables, collapse = ';'))
+    # message(paste(input$autoQC01Variables, collapse = ';'))
     
     autoQC01LongFilter <- autoQC01Long()$variable %in% input$autoQC01Variables 
       
@@ -235,7 +237,7 @@ function(input, output, session) {
     
     # TODO(cp): dix dependency on the comet time slider
     instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer()) &
-        input$cometTimeRange[1] <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < input$cometTimeRange[2] 
+      vals$timeMin <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < vals$timeMax
     
     bfabricInstrumentEvents()[instrumentFilter, ]
   })
@@ -357,6 +359,8 @@ function(input, output, session) {
   
   cometLong <- reactive({
     shiny::req(cometWide())
+    
+    
     rv <- cometWide() |>
       reshape2::melt(id.vars = c("md5", "File.Name", "time", "Instrument",
                                  "scanType"))
@@ -367,12 +371,16 @@ function(input, output, session) {
   cometData <- reactive({
     shiny::req(input$instrument)
     shiny::req(cometLong())
-    
+   
     now <- Sys.time()
+    
+    
+    msg <- paste0("cometTimes:", sum(vals$timeMin < cometLong()$time), " | ", sum(cometLong()$time < vals$timeMax))
+    message(msg) 
     
     cometFilter <- cometLong()$Instrument %in% input$instrument &
       cometLong()$variable %in% input$cometVariables &
-      input$cometTimeRange[1] <= cometLong()$time & cometLong()$time <= input$cometTimeRange[2]
+      vals$timeMin < cometLong()$time & cometLong()$time < vals$timeMax
   
      message(paste0("comet filter length: ", sum(cometFilter)))
     
@@ -482,12 +490,58 @@ function(input, output, session) {
       unlist() 
   })
   
-  vals <- reactiveValues(timeRange = -1)
+
+  ## >> reactiveValues defined here ##################
+  vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
+                              timeMin = (Sys.time() - (7 * 3600 * 24)),
+                              timeMax = Sys.time())
+  
+  observeEvent({ input$timeRange }, {
+    #shiny::req(input$timeRange)
+    
+    timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
+    if (timeDiff < as.integer(input$timeRange) * 3600 * 24){
+      vals$timeRangeInSecs <- as.integer(input$timeRange) * 3600 * 24
+    }else{
+      warning("timeDiff is higher than timeRange")
+    }
+  })
   
   observe({
-      req(input$timeRange)
-      vals$timeRange <- as.integer(input$timeRange)
-    })
+    dt <- difftime(vals$timeMax, vals$timeMin, units = "secs")
+    
+    msg <- paste0("input timeRange: ", vals$timeRangeInSecs,
+                  " | timeMin: ", vals$timeMin,
+                  " | timeMax: ", vals$timeMax,
+                  " | timeDiff: ", dt)
+    
+    message(msg)
+  })
+  
+  observeEvent({input$cometTimeRange}, {
+    #shiny::req(input$cometTimeRange)
+    
+    timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
+    if (timeDiff < vals$timeRangeInSecs){
+      vals$timeMin <- input$cometTimeRange[1]
+      vals$timeMax <- input$cometTimeRange[2]
+    }else{
+      warning("timeDiff is higher than timeRange")
+    }
+  })
+  
+  observeEvent({input$autoQC01TimeRange}, {
+   # shiny::req(input$autoQC01TimeRange)
+    
+    timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
+    
+    if (timeDiff < vals$timeRangeInSecs){
+      vals$timeMin <- input$autoQC01TimeRange[1]
+      vals$timeMax <- input$autoQC01TimeRange[2]
+    }else{
+      warning("timeDiff is higher than timeRange")
+    }
+  })
   
   #  renderUIs =============
   ## TimeSliders ---------------
@@ -495,24 +549,23 @@ function(input, output, session) {
     now <- Sys.time()
     
     sliderInput("autoQC01TimeRange", "Observation range:",
-                min = (now - (vals$timeRange * 3600 * 24)),
+                min = (now - (vals$timeRangeInSecs)),
                 max = now,
-                value = c(now - 7 * 3600 * 24, now),
+                value = c(vals$timeMin, vals$timeMax),
                 timeFormat = "%F",
-                step = 7,
+                step = 3600,
                 width = "95%")
   })
   
   output$cometTimeSlider <- renderUI({
-    mintime <- min(cometLong()$time)
     now <- Sys.time()
     
     sliderInput("cometTimeRange", "Observation range:", 
-                min = (now - (vals$timeRange * 3600 * 24)),
+                min = (now - (vals$timeRangeInSecs)) + 7200,
                 max = now,
-                value = c(now - 7 * 3600 * 24, now),
+                value = c(vals$timeMin, vals$timeMax),
                 timeFormat = "%F",
-                step = 7,
+                step = 3600,
                 width = "95%")
   })
   
