@@ -214,7 +214,12 @@ function(input, output, session) {
   bfabricInstrumentEvents <- reactive({
     # shiny::req(input$useBfabric)
     if(input$useBfabric){
-      return(bfabricInstrumentFetch())
+      
+      S <- bfabricInstrumentFetch()
+      II <- .getInstruments()
+      S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
+      
+      return(S)
     }else{NULL}
   })
   
@@ -847,7 +852,7 @@ function(input, output, session) {
     shiny::req(bfabricInstrumentEvents())
     
     n <- length(unique(bfabricInstrumentEvents()$instrumentid))
-    lattice::dotplot(~ time | instrumentid,
+    lattice::dotplot(~ time | InstrumentName,
                      group = instrumenteventtypeid,
                      layout = c(1, n),
                      data = bfabricInstrumentEvents(),
