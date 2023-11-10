@@ -177,36 +177,40 @@ function(input, output, session) {
   
   
   ## bfabricInstrumentEvents  -------------
-  bfabricInstrumentEvents <- reactive({
-    #shiny::req(input$useBfabric)
+  bfabricInstrumentFetch <- reactive({
+    
     
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Fetching B-Fabric instrument events ...")
     on.exit(progress$close())
     
+    
+    rv <- bfabricShiny::readPages(login,
+                                  webservicepassword,
+                                  endpoint = 'instrumentevent',
+                                  query = list(instrumentid = .getInstruments() |>
+                                                 as.integer() |> as.list()),
+                                  posturl = bfabricposturl)  |>
+      lapply( FUN=function(x){
+        if (all(c('description', 'datetime') %in% names(x))){
+          df <- data.frame(time = x$datetime |> as.POSIXlt(),
+                           instrumentid = as.integer(x$instrument$`_id`),
+                           description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
+                           instrumenteventtypeid = x$instrumenteventtype$`_id`)
+          return(df)
+        }
+        NULL
+      }) |>
+      Reduce(f = rbind)  
+    
+    return(rv[order(rv$time), ])
+  })
+  
+  bfabricInstrumentEvents <- reactive({
+    # shiny::req(input$useBfabric)
     if(input$useBfabric){
-      rv <- bfabricShiny::readPages(login,
-                                    webservicepassword,
-                                    endpoint = 'instrumentevent',
-                                    query = list(instrumentid = .getInstruments() |>
-                                                   as.integer() |> as.list()),
-                                    posturl = bfabricposturl)  |>
-        lapply( FUN=function(x){
-          if (all(c('description', 'datetime') %in% names(x))){
-            df <- data.frame(time = x$datetime |> as.POSIXlt(),
-                             instrumentid = as.integer(x$instrument$`_id`),
-                             description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
-                             instrumenteventtypeid = x$instrumenteventtype$`_id`)
-            return(df)
-          }
-          NULL
-        }) |>
-        Reduce(f = rbind)  
-      
-      
-      return(rv[order(rv$time), ])
-    }
-    NULL
+      return(bfabricInstrumentFetch())
+    }else{NULL}
   })
   
   bfabricInstrumentEventsFiltered <- reactive({
