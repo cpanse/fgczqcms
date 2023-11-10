@@ -770,7 +770,9 @@ function(input, output, session) {
     progress$set(message = "Plotting autoQC01 data ...")
     on.exit(progress$close())
     
-    .lattice(autoQC01Data(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
+    .lattice(autoQC01Data(),
+             useBfabric = input$useBfabric,
+             bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time)
     
   })#, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
   
@@ -841,14 +843,18 @@ function(input, output, session) {
   })
   
   output$plotSummaryBfabricEvents <- renderPlot({
+    shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEvents())
     
     lattice::dotplot(instrumentid ~ time,
                      data = bfabricInstrumentEvents(),
+                     group = instrumenteventtypeid,
                      alpha = 0.2,
-                     cex = 2.4,
+                     cex = 1,
                      pch = 22,
-    )
+                     auto.key = list(space = "bottom"),
+                     main = 'B-Fabric instrument events grouped by event type')
+    
   })
   
   ## printSummary --------
