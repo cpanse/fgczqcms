@@ -233,9 +233,9 @@ function(input, output, session) {
     
     now <- Sys.time()
     
+    # TODO(cp): dix dependency on the comet time slider
     instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer()) &
-        input$cometDays[1] <= difftime(now, bfabricInstrumentEvents()$time, units = "days")  &
-        difftime(now, bfabricInstrumentEvents()$time, units = "days") < input$cometDays[2] 
+        input$cometTimeRange[1] <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < input$cometTimeRange[2] 
     
     bfabricInstrumentEvents()[instrumentFilter, ]
   })
