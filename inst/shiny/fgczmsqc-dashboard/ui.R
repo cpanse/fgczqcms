@@ -8,11 +8,10 @@ dashboardPage(
     sidebarMenu(
       menuItem("autoQC01", tabName = "autoQC01Plots", icon = icon("chart-line")),
       menuItem("DIA-NN stat", tabName = "diannplots", icon = icon("chart-line"),
-               badgeLabel = "alpha", badgeColor = "purple"),
+               badgeLabel = "alpha", badgeColor = "fuchsia"),
       #menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
       menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
-      menuItem("Summary", tabName = "summary", icon = icon("table"),
-               badgeLabel = "new", badgeColor = "fuchsia"),
+      menuItem("Summary", tabName = "summary", icon = icon("table")),
       hr(),
       menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
