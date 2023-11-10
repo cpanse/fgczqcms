@@ -785,13 +785,19 @@ function(input, output, session) {
   ## plotSummary --------
   output$plotSummary  <- renderPlot({
     shiny::req(summaryData())
-  
+    
+    t <- trellis.par.get("superpose.symbol")
+    cm <- c("#94C6FF", "#FFBBA9", "#76E3B8", "#FFD6AD", 
+             "#BCE1FF", "#FFF691", "#FFC1E1")
+    t$col <- cm
+    t$fill <- cm
+    trellis.par.set("superpose.symbol", t)
+    
     lattice::dotplot(Instrument ~ time | method,
                      group = method,
                      data = summaryData(),
-                     alpha = 0.1,
-                     bty="n",
-                     cex = 2,
+                     alpha = 0.2,
+                     cex = 2.4,
                      pch = 22,
                      layout = c(1, 3))
     
