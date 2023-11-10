@@ -217,6 +217,7 @@ function(input, output, session) {
     # shiny::req(input$useBfabric)
     if(input$useBfabric){
       
+      ## TODO(cp): assign instrument event type names
       S <- bfabricInstrumentFetch()
       II <- .getInstruments()
       S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
@@ -502,6 +503,15 @@ function(input, output, session) {
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
     if (timeDiff < as.integer(input$timeRange) * 3600 * 24){
       vals$timeRangeInSecs <- as.integer(input$timeRange) * 3600 * 24
+      
+      if (vals$timeMin > Sys.time() - 7*24*3600){
+        vals$timeMin <- Sys.time() - 7*24*3600
+      }
+     
+      if (vals$timeMax < Sys.time()){
+        vals$timeMax <- Sys.time()
+      }
+      
     }else{
       warning("timeDiff is higher than timeRange")
     }
@@ -522,9 +532,11 @@ function(input, output, session) {
     #shiny::req(input$cometTimeRange)
     
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
+    
     if (timeDiff < vals$timeRangeInSecs){
       vals$timeMin <- input$cometTimeRange[1]
       vals$timeMax <- input$cometTimeRange[2]
+      
     }else{
       warning("timeDiff is higher than timeRange")
     }
@@ -547,25 +559,31 @@ function(input, output, session) {
   ## TimeSliders ---------------
   output$autoQC01TimeSlider <- renderUI({
     now <- Sys.time()
-    
+    if (vals$timeMin < (now - (vals$timeRangeInSecs))){
+      vals$timeMin <- (now - (vals$timeRangeInSecs)) + 1
+    }
     sliderInput("autoQC01TimeRange", "Observation range:",
                 min = (now - (vals$timeRangeInSecs)),
                 max = now,
                 value = c(vals$timeMin, vals$timeMax),
                 timeFormat = "%F",
-                step = 3600,
+                step = 3600 * 24,
                 width = "95%")
   })
   
   output$cometTimeSlider <- renderUI({
     now <- Sys.time()
     
+    if (vals$timeMin < (now - (vals$timeRangeInSecs))){
+      vals$timeMin <- (now - (vals$timeRangeInSecs)) + 3600
+    }
+       
     sliderInput("cometTimeRange", "Observation range:", 
-                min = (now - (vals$timeRangeInSecs)) + 7200,
+                min = (now - (vals$timeRangeInSecs)),
                 max = now,
                 value = c(vals$timeMin, vals$timeMax),
                 timeFormat = "%F",
-                step = 3600,
+                step = 3600 *24,
                 width = "95%")
   })
   
@@ -917,14 +935,15 @@ function(input, output, session) {
     shiny::req(bfabricInstrumentEvents())
     
     n <- length(unique(bfabricInstrumentEvents()$instrumentid))
+    
     lattice::dotplot(~ time | InstrumentName,
                      group = instrumenteventtypeid,
                      layout = c(1, n),
                      data = bfabricInstrumentEvents(),
-                     alpha = 0.8,
+                     #alpha = 0.8,
                      cex = 1,
                      pch = 22,
-                     auto.key = list(space = "right"),
+                     auto.key = list(space = "right", pch=22),
                      main = 'B-Fabric instrument events grouped by event type',
                      )
   })
