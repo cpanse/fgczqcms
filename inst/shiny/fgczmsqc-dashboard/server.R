@@ -840,6 +840,17 @@ function(input, output, session) {
                     main = 'cumulated file size')
   })
   
+  output$plotSummaryBfabricEvents <- renderPlot({
+    shiny::req(bfabricInstrumentEvents())
+    
+    lattice::dotplot(Instrument ~ time,
+                     data = bfabricInstrumentEvents(),
+                     alpha = 0.2,
+                     cex = 2.4,
+                     pch = 22,
+    )
+  })
+  
   ## printSummary --------
   output$summary <- renderPrint({
     capture.output( table(summaryData()$method, summaryData()$Instrument))
