@@ -169,12 +169,9 @@ function(input, output, session) {
     on.exit(progress$close())
     
     now <- Sys.time()
-    
-    # message(paste(input$autoQC01Variables, collapse = ';'))
-    
+  
     autoQC01LongFilter <- autoQC01Long()$variable %in% input$autoQC01Variables 
       
-    
     autoQC01Long()[autoQC01LongFilter, ]
   })
   
@@ -182,7 +179,7 @@ function(input, output, session) {
   ## Fetch bfabricInstrumentEventType
   bfabricInstrumentEventTypeFetch <- reactive({
     progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Fetching B-Fabric instrument types ...")
+    progress$set(message = "Fetching instrument event types ...")
     on.exit(progress$close())
     
     bfabricShiny::readPages(login,
@@ -199,7 +196,7 @@ function(input, output, session) {
     
     
     progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Fetching B-Fabric instrument events ...")
+    progress$set(message = "Fetching instrument events ...")
     on.exit(progress$close())
     
     
