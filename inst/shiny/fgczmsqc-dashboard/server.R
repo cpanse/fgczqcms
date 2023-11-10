@@ -846,13 +846,13 @@ function(input, output, session) {
     shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEvents())
     
-    lattice::dotplot(instrumentid ~ time,
+    lattice::dotplot(instrumentid ~ time | instrumenteventtypeid,
                      data = bfabricInstrumentEvents(),
                      group = instrumenteventtypeid,
                      alpha = 0.2,
                      cex = 1,
                      pch = 22,
-                     auto.key = list(space = "bottom"),
+                     #auto.key = list(space = "right"),
                      main = 'B-Fabric instrument events grouped by event type')
     
   })
