@@ -62,7 +62,7 @@ stopifnot(require(readr),
   lattice::panel.xyplot(x[!filter], y[!filter], ..., type = 'p', col='lightgrey')
 }
 
-.lattice <- function(S, useBfabric = FALSE, bfabricInstrumentEvents) {
+.lattice <- function(S, useBfabric = FALSE, bfabricInstrumentEvents, ...) {
   if (nrow(S) > 0){
     t <- trellis.par.get("superpose.symbol")
     cm <- c("#94C6FF", "#FFBBA9", "#76E3B8", "#FFD6AD", 
@@ -71,35 +71,17 @@ stopifnot(require(readr),
     t$fill <- cm
     trellis.par.set("superpose.symbol", t)
     
-    if ('scanType' %in% colnames(S)) {
-      lattice::xyplot(value ~ time | variable * Instrument,
-                      group = scanType,
-                      data = S,
-                      scales = list(y = list(relation = "free")),
-                      panel = function(x, y, ...){
-                        .iqrPanel(x, y, ...)
-                        try(if (useBfabric){
-                          lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
-                        }, TRUE)
-                      },
-                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                      auto.key = list(space = "bottom"))
-    }else{
-      lattice::xyplot(value ~ time | variable * Instrument,
-                      data = S,
-                      scales = list(y = list(relation = "free")),
-                      panel = function(x, y, ...){
-                        .iqrPanel(x, y, ...)
-                        try(if (useBfabric){
-                          lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
-                        }, TRUE)
-                      },
-                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                      auto.key = list(space = "bottom"))
-    }
-    
-    
-   
+    lattice::xyplot(value ~ time | variable * Instrument,
+                    data = S,
+                    scales = list(y = list(relation = "free")),
+                    panel = function(x, y, ...){
+                      .iqrPanel(x, y, ...)
+                      try(if (useBfabric){
+                        lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
+                      }, TRUE)
+                    },
+                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                    auto.key = list(space = "bottom"), ...)
   }else{
     .missing()
   }
@@ -767,7 +749,7 @@ function(input, output, session) {
     progress$set(message = "Plotting comet data ...")
     on.exit(progress$close())
     
-    .lattice(cometData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
+    .lattice(cometData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time, group = scanType)
   
   })# height = function(){400 * length(cometData()$instrument |> unique())})
   
