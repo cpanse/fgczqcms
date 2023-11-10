@@ -64,18 +64,42 @@ stopifnot(require(readr),
 
 .lattice <- function(S, useBfabric = FALSE, bfabricInstrumentEvents) {
   if (nrow(S) > 0){
-    lattice::xyplot(value ~ time | variable * Instrument,
-                    group = Instrument,
-                    data = S,
-                    scales = list(y = list(relation = "free")),
-                    panel = function(x, y, ...){
-                      .iqrPanel(x, y, ...)
-                      try(if (useBfabric){
-                        lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
-                      }, TRUE)
-                    },
-                    sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
-                    auto.key = list(space = "bottom"))
+    t <- trellis.par.get("superpose.symbol")
+    cm <- c("#94C6FF", "#FFBBA9", "#76E3B8", "#FFD6AD", 
+            "#BCE1FF", "#FFF691", "#FFC1E1")
+    t$col <- cm
+    t$fill <- cm
+    trellis.par.set("superpose.symbol", t)
+    
+    if ('scanType' %in% colnames(S)) {
+      lattice::xyplot(value ~ time | variable * Instrument,
+                      group = scanType,
+                      data = S,
+                      scales = list(y = list(relation = "free")),
+                      panel = function(x, y, ...){
+                        .iqrPanel(x, y, ...)
+                        try(if (useBfabric){
+                          lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
+                        }, TRUE)
+                      },
+                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                      auto.key = list(space = "bottom"))
+    }else{
+      lattice::xyplot(value ~ time | variable * Instrument,
+                      data = S,
+                      scales = list(y = list(relation = "free")),
+                      panel = function(x, y, ...){
+                        .iqrPanel(x, y, ...)
+                        try(if (useBfabric){
+                          lattice::panel.abline(v = bfabricInstrumentEvents, col = '#FF1111')
+                        }, TRUE)
+                      },
+                      sub = "Interquantile range (IQR): inbetween grey lines; median green; outliers: lightgrey.",
+                      auto.key = list(space = "bottom"))
+    }
+    
+    
+   
   }else{
     .missing()
   }
