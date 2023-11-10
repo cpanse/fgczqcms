@@ -179,8 +179,22 @@ function(input, output, session) {
   })
   
   
+  ## Fetch bfabricInstrumentEventType
+  bfabricInstrumentEventTypeFetch <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Fetching B-Fabric instrument types ...")
+    on.exit(progress$close())
+    
+    bfabricShiny::readPages(login,
+                            webservicepassword,
+                            endpoint='instrumenteventtype',
+                            query=list(),
+                            posturl=bfabricposturl) |>
+      lapply(function(x){data.frame(id=x$`_id`, name=x$name)}) |>
+      Reduce(f = rbind)
+  })
   
-  ## bfabricInstrumentEvents  -------------
+  ## Fetch bfabricInstrumentEvents  -------------
   bfabricInstrumentFetch <- reactive({
     
     
@@ -211,14 +225,15 @@ function(input, output, session) {
   })
   
   bfabricInstrumentEvents <- reactive({
-    # shiny::req(input$useBfabric)
     if(input$useBfabric){
       
       ## TODO(cp): assign instrument event type names
       S <- bfabricInstrumentFetch()
       II <- .getInstruments()
-      S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
+      IET <- bfabricInstrumentEventTypeFetch()
       
+      S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
+      S$InstrumentEventTypeName <- IET[match(S$instrumenteventtypeid, IET$id), 'name']
       return(S)
     }else{NULL}
   })
@@ -917,9 +932,9 @@ function(input, output, session) {
     trellis.par.set("superpose.symbol", superpose.symbol())
     
     
-    barchart(size/1024^3 ~ format(time, "%Y-%m") | method, data = summaryData(), layout=c(1,3),
-             scales=list(x=list(rot=45)))
-  
+    barchart(size/1024^3 ~ format(time, "%Y-%m") | method, data = summaryData(),
+             layout = c(1,3),
+             scales = list(x = list(rot=45)))
   })
   
   output$plotSummaryBfabricEvents <- renderPlot({
@@ -929,7 +944,7 @@ function(input, output, session) {
     n <- length(unique(bfabricInstrumentEvents()$instrumentid))
     
     lattice::dotplot(~ time | InstrumentName,
-                     group = instrumenteventtypeid,
+                     group = InstrumentEventTypeName,
                      layout = c(1, n),
                      data = bfabricInstrumentEvents(),
                      cex = 1,
