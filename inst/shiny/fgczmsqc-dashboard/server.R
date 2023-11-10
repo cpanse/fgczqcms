@@ -198,7 +198,7 @@ function(input, output, session) {
                                   posturl = bfabricposturl)  |>
       lapply( FUN=function(x){
         if (all(c('description', 'datetime') %in% names(x))){
-          df <- data.frame(time = x$datetime |> as.POSIXlt(),
+          df <- data.frame(time = (x$datetime |> as.POSIXlt()),
                            instrumentid = as.integer(x$instrument$`_id`),
                            description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
                            instrumenteventtypeid = x$instrumenteventtype$`_id`)
