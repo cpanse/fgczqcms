@@ -846,17 +846,17 @@ function(input, output, session) {
     shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEvents())
     
-    S <- bfabricInstrumentEvents()
-    base::save(S, file='/tmp/bfabricInstrumentEvents.RData')
-    lattice::dotplot(instrumentid ~ time | instrumenteventtypeid,
-                     data = S,
+    n <- length(unique(bfabricInstrumentEvents()$instrumentid))
+    lattice::dotplot(~ time | instrumentid,
                      group = instrumenteventtypeid,
+                     layout = c(1, n),
+                     data = bfabricInstrumentEvents(),
                      alpha = 0.8,
                      cex = 1,
                      pch = 22,
-                     #auto.key = list(space = "right"),
-                     main = 'B-Fabric instrument events grouped by event type')
-    
+                     auto.key = list(space = "right"),
+                     main = 'B-Fabric instrument events grouped by event type',
+                     )
   })
   
   ## printSummary --------
