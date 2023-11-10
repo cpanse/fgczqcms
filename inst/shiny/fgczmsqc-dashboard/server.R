@@ -967,22 +967,16 @@ function(input, output, session) {
     shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEventsFiltered())
     
-    if (input$useBfabric){
-      DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
-    }else{
-      NULL
-    }
+    DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+    
   })
   
   output$cometBfabricInstrumentEventsOutput <- renderUI({
     shiny::req(input$useBfabric)
     shiny::req(bfabricInstrumentEventsFiltered())
     
-    if (input$useBfabric){
-      DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
-    }else{
-      NULL
-    }
+    DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+    
   })
   
   #### render sessionInfo ----

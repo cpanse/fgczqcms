@@ -62,7 +62,7 @@ dashboardPage(
               )
       ),
       tabItem(tabName = "cometplots",
-              h2("Identification using comet"),
+              fluidRow(h2("Identification using comet")),
               fluidRow(htmlOutput("cometVariable")),
               fluidRow(htmlOutput("cometTimeSlider")),
               fluidRow(htmlOutput("cometBfabricInstrumentEventsOutput")),
