@@ -843,7 +843,7 @@ function(input, output, session) {
   output$plotSummaryBfabricEvents <- renderPlot({
     shiny::req(bfabricInstrumentEvents())
     
-    lattice::dotplot(Instrument ~ time,
+    lattice::dotplot(instrumentid ~ time,
                      data = bfabricInstrumentEvents(),
                      alpha = 0.2,
                      cex = 2.4,
