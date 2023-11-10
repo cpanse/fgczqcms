@@ -747,10 +747,11 @@ function(input, output, session) {
       lapply(function(x){
         AUC <- sum(diff(x$xx) * (head(x$yp, -1) + tail(x$yp,  -1))) / 2
         APEX <- x$xx[which.max(x$yp)[1]]
-        
+        # TODO(cp): determine Full width at half maximum (FWHM)
+        RTDIFF <- diff(range(x$xx))
         plot(x$times, x$intensities,
              type='p',
-             sub = sprintf("AUC: %.1e | APEX: %.1f", AUC, APEX),
+             sub = sprintf("AUC: %.1e | APEX: %.1f | dRT: %.1f", AUC, APEX, RTDIFF),
              ylim = range(c(x$intensities,x$yp)),
              main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
         lines(x$xx, x$yp, col='red');
