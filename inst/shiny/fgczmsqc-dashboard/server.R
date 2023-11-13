@@ -50,7 +50,7 @@ stopifnot(require(readr),
   ## predict
   xx <- with(peak, seq(min(xc) - delta, max(xc) + delta, length = n))
   yp <- exp(predict(fit, data.frame(xc = xx)))
-  data.frame(xx = xx + x.mean, yp = yp)
+  data.frame(xx = xx + x.mean, yp = yp, r.squared = summary(fit)$r.squared)
 }
 
 .fitPeak.rawrrChromatogram <- function (x, delta = 0.25, n = 200) 
@@ -60,6 +60,7 @@ stopifnot(require(readr),
     rv <- y
     rv$xx <- fittedPeak$xx
     rv$yp <- fittedPeak$yp
+    rv$r.squared <- fittedPeak$r.squared
     rv
   })
 }
@@ -363,7 +364,7 @@ function(input, output, session) {
     
     iRTprofileRawDDA() |>
       rawrr:::pickPeak.rawrrChromatogram() |>
-      .fitPeak.rawrrChromatogram(delta = 0.5, n = 200)
+      .fitPeak.rawrrChromatogram(delta = 0.5, n = 400)
   })
   
   
@@ -768,14 +769,16 @@ function(input, output, session) {
     idxMax <- which(y == ymax)[1]
     
     for (i in 1:length(y)){
-      if (y[i] > halfmax){
+      if (y[i] >= halfmax){
         break
       }
     }
     
+    fwhm <- 2 * (x[idxMax] - x[i])
+    
     return(list(x1= x[i], y1 = y[i], 
                 idxMax = idxMax,
-                fwhm = 2*(x[idxMax] - x[i])))
+                fwhm = fwhm))
   }
   
   output$plotDDAiRTprofiles <- renderPlot({
@@ -789,16 +792,25 @@ function(input, output, session) {
         APEX <- x$xx[which.max(x$yp)[1]]
         # TODO(cp): determine Full width at half maximum (FWHM)
         FWHM <- .fwhm(x$xx, x$yp)
-        plot(x$times, x$intensities,
-             type='p',
-             sub = sprintf("AUC: %.1e | APEX: %.1f | FWHM: %.1e", AUC, APEX, FWHM$fwhm),
-             ylim = range(c(x$intensities,x$yp)),
-             xlim = range(x$xx),
-             main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
-        lines(x$xx, x$yp, col='red');
-        segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
-        abline(v = APEX, col = 'blue')
-        x})
+        r.squared <- x$r.squared[1]
+        
+        if (FWHM$fwhm > 0){
+          plot(x$times, x$intensities,
+               type='p',
+               sub = sprintf("AUC: %.1e | APEX: %.1f | FWHM: %.1e", AUC, APEX, FWHM$fwhm),
+               ylim = range(c(x$intensities, x$yp)),
+               xlim = range(APEX - 2 * FWHM$fwhm, APEX + 2 * FWHM$fwhm),
+               main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
+          lines(x$xx, x$yp, col='red');
+          segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
+          abline(v = APEX, col = 'blue')
+          legend("topleft", legend = c(sprintf("R^2: %.1e", r.squared)))
+        }else{
+          plot(x$times, x$intensities,main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass))
+          lines(x$xx, x$yp, col='violet');
+        }
+        x
+      })
   }, height = 600)
   
   output$plotDDAiRTfits <- renderPlot({
