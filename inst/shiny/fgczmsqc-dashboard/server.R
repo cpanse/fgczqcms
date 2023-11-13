@@ -38,6 +38,32 @@ stopifnot(require(readr),
 
 # utils ===========
 
+.fitChromatographicPeak <- function (x, y, delta = 0.25, n = 200) 
+{
+  peak <- data.frame(logy = log(y + 1), x = x)
+  x.mean <- mean(peak$x)
+  peak$xc <- peak$x - x.mean
+  weights <- y^2
+  fit <- lm(logy ~ xc + I(xc^2), data = peak, weights = weights)
+  x0 <- -fit$coefficients[2]/(2 * fit$coefficients[3])
+  
+  ## predict
+  xx <- with(peak, seq(min(xc) - delta, max(xc) + delta, length = n))
+  yp <- exp(predict(fit, data.frame(xc = xx)))
+  data.frame(xx = xx + x.mean, yp = yp)
+}
+
+.fitPeak.rawrrChromatogram <- function (x, delta = 0.25, n = 200) 
+{
+  lapply(x, function(y) {
+    fittedPeak <- .fitChromatographicPeak(y$times, y$intensities, delta = delta, n)
+    rv <- y
+    rv$xx <- fittedPeak$xx
+    rv$yp <- fittedPeak$yp
+    rv
+  })
+}
+
 .qcpanel <- function(x, y, ...){
   lattice::panel.abline(h = quantile(y, c(0.05, 0.25, 0.5, 0.75, 0.9)),
                col='grey', lwd=c(1,2,3,2,1))
@@ -337,7 +363,7 @@ function(input, output, session) {
     
     iRTprofileRawDDA() |>
       rawrr:::pickPeak.rawrrChromatogram() |>
-      rawrr:::fitPeak.rawrrChromatogram()
+      .fitPeak.rawrrChromatogram(delta = 0.5, n = 200)
   })
   
   
@@ -476,10 +502,6 @@ function(input, output, session) {
   })
   
   files <- reactive({
-    shiny::req(diannData())
-    shiny::req(cometData())
-    shiny::req(autoQC01Long())
-
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Composing file list ...")
     on.exit(progress$close())
@@ -738,26 +760,45 @@ function(input, output, session) {
       .plotChromatogramSet(xlim=input$rtSlider)
   })
   
+  .fwhm <- function(x, y){
+    ymax <- max(y)
+    halfmax <- ymax / 2
+    
+    idxMax <- which(y == ymax)[1]
+    
+    for (i in 1:length(y)){
+      if (y[i] > halfmax){
+        break
+      }
+    }
+    
+    return(list(x1= x[i], y1 = y[i], 
+                idxMax = idxMax,
+                fwhm = 2*(x[idxMax] - x[i])))
+  }
+  
   output$plotDDAiRTprofiles <- renderPlot({
     shiny::req(input$showIrtMS1Profile)
     shiny::req(rtFittedAPEX())
     
-    par(mfrow = c(2, 6), mar = c(6, 4, 4, 1))
+    par(mfrow = c(3, 4), mar = c(6, 4, 4, 1))
     rtFittedAPEX <- rtFittedAPEX() |>
       lapply(function(x){
         AUC <- sum(diff(x$xx) * (head(x$yp, -1) + tail(x$yp,  -1))) / 2
         APEX <- x$xx[which.max(x$yp)[1]]
         # TODO(cp): determine Full width at half maximum (FWHM)
-        RTDIFF <- diff(range(x$xx))
+        FWHM <- .fwhm(x$xx, x$yp)
         plot(x$times, x$intensities,
              type='p',
-             sub = sprintf("AUC: %.1e | APEX: %.1f | dRT: %.1f", AUC, APEX, RTDIFF),
+             sub = sprintf("AUC: %.1e | APEX: %.1f | FWHM: %.1e", AUC, APEX, FWHM$fwhm),
              ylim = range(c(x$intensities,x$yp)),
+             xlim = range(x$xx),
              main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
         lines(x$xx, x$yp, col='red');
+        segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
         abline(v = APEX, col = 'blue')
         x})
-  })
+  }, height = 600)
   
   output$plotDDAiRTfits <- renderPlot({
     shiny::req(input$showIrtMS1Profile)
