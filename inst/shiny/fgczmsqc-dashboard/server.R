@@ -478,14 +478,15 @@ function(input, output, session) {
   files <- reactive({
     shiny::req(diannData())
     shiny::req(cometData())
-    shiny::req(autoQC01Long())
+    shiny::req(autoQC01Data())
 
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Composing file list ...")
     on.exit(progress$close())
     
-    c((diannData()$File.Name|>unique()),
-      (cometData()$File.Name|>unique())) |>
+    c( (autoQC01Data()$filename |> unique()),
+      (diannData()$File.Name |> unique()),
+      (cometData()$File.Name |> unique())) |>
       unique() |>
       lapply(function(f){
         if(file.exists(file.path(rootdirraw(), f))){return(f)}
@@ -674,7 +675,7 @@ function(input, output, session) {
     L <- tagList(fluidRow(box(selectInput('file', 'Files',
                                           files(),
                                           multiple = FALSE,
-                                          selected = files()[1])), width = "100%"),
+                                          selected = files()[1]),width="100%"), width = "100%"),
                  fluidRow(checkboxInput("showRawFileHeader", "show raw File Header", value = FALSE)),
                  fluidRow(checkboxInput("showIrtMS1Profile", "show iRT Ms Profile", value = FALSE)),
                  fluidRow(checkboxInput("showIrtMS2Profile", "show iRT Ms2 Profile" , value = FALSE)))
