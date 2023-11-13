@@ -3,7 +3,7 @@
 library(shinydashboard)
 
 dashboardPage(
-  dashboardHeader(title = "FCGZ MS QC"),
+  dashboardHeader(title = "FGCZ MS QC"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("autoQC01", tabName = "autoQC01Plots", icon = icon("chart-line")),
