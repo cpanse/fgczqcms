@@ -152,6 +152,39 @@ stopifnot(require(readr),
 # define server logic ============
 function(input, output, session) {
   #  reactives =============
+  autoQC01APEX <- reactive({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Reading autoQC01 data ...", detail = "APEX | AUC | FWHM")
+    on.exit(progress$close())
+
+    rootdir() |>
+      file.path("autoQC01-fit-apex-auc-fwhm.txt") |>
+      readr::read_delim(
+        delim = ";",
+        escape_double = FALSE,           
+	col_names =c('filename', 'time', 'peptide', 'AUC', 'APEX', 'FWHM'),
+        col_types = cols(time = col_datetime(format = "%s")),
+        trim_ws = TRUE) -> rv
+
+    rv <- rv[order(rv$time), ]
+    
+    rv$Instrument <- NA
+    rv |> .assignInstrument(coln = 'filename')
+  })
+  
+  autoQC01APEXData <- reactive({
+    shiny::req(input$instrument)
+    shiny::req(autoQC01APEX())
+
+    autoQC01APEXFilter <- autoQC01APEX()$Instrument %in% input$instrument & 
+      vals$timeMin < autoQC01APEX()$time & autoQC01APEX()$time < vals$timeMax
+    
+    rv <- autoQC01APEX()[autoQC01APEXFilter, ] |>
+      reshape2::melt(id.vars = c("filename", "time", "Instrument", "peptide"))
+
+    rv[rv$variable == 'APEX', ]
+  })
+
   ## autoQC01 ---------
   autoQC01wide <- reactive({
     progress <- shiny::Progress$new(session = session)
@@ -799,7 +832,8 @@ function(input, output, session) {
                type='p',
                sub = sprintf("AUC: %.1e | APEX: %.1f | FWHM: %.1e", AUC, APEX, FWHM$fwhm),
                ylim = range(c(x$intensities, x$yp)),
-               xlim = range(APEX - 2 * FWHM$fwhm, APEX + 2 * FWHM$fwhm),
+               xlim = range(c(x$xx, x$times)),
+               #xlim = range(APEX - 2 * FWHM$fwhm, APEX + 2 * FWHM$fwhm),
                main = paste(names(iRTmz())[which(x$mass == iRTmz())], x$mass));
           lines(x$xx, x$yp, col='red');
           segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
@@ -917,6 +951,27 @@ function(input, output, session) {
     
   })#, height = function(){400 * length(diannData()$Instrument |> unique())})
 
+  
+  output$autoQC01APEXPlot <- renderPlot({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "Plotting autoQC01 APEX ...")
+    on.exit(progress$close())
+    shiny::req(autoQC01APEXData())
+
+#    .lattice(autoQC01APEXData(),
+#             useBfabric = input$useBfabric,
+#             bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time,
+#             group = peptide)
+
+    lattice::xyplot(value ~ time | variable * Instrument, group=peptide, data = autoQC01APEXData(), type = 'b',
+                    auto.key = list(space = "bottom"),
+                    panel = function(x, y, ...){
+                      lattice::panel.xyplot(x, y, ...)
+                      try(if (input$useBfabric){
+                        lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
+                      }, TRUE)
+                    })
+  })
   
   #### autoQC01 lattice::xyplot -----------------
   output$autoQC01Plot <- renderPlot({

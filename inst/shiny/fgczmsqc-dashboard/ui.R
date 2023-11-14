@@ -46,6 +46,7 @@ dashboardPage(
               fluidRow(htmlOutput("autoQC01Variable")),
               fluidRow(htmlOutput("autoQC01TimeSlider")), 
               fluidRow(htmlOutput("autoQC01BfabricInstrumentEventsOutput")),
+              fluidRow(box(plotOutput("autoQC01APEXPlot", height = "500px"), width = "100%")),
               fluidRow(box(plotOutput("autoQC01Plot"), height = "55%", width = "100%"))
       ),
       tabItem(tabName = "diannplots",
