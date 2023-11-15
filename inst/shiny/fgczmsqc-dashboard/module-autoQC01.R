@@ -69,6 +69,10 @@ autoQC01Server <- function(id, ii,  filterValues){
                  
                    autoQC01APEXwide()[autoQC01APEXFilter, ] |>
                      reshape2::melt(id.vars = c("filename", "time", "Instrument", "peptide")) -> rv
+                   
+                   
+                   rv$value[rv$variable == "AUC"] <- log(rv$value[rv$variable == "AUC"], 10) 
+                   
                    message(paste0("autoQC01 module APEX long nrow: ", nrow(rv)))
                    message(paste0(input$peptides, collapse = ', '))
                    message(input$variables)
@@ -76,13 +80,13 @@ autoQC01Server <- function(id, ii,  filterValues){
                    rv
                  })
                  
-                 
                  output$plotSelection <- renderUI({
                    shiny::req(input$variables)
                    
                    L <- tagList()
                    if ("AUC" %in% input$variables){
-                     L <- append(L, tagList(plotOutput(NS(id, "auc"))))
+                     L <- append(L, tagList(tableOutput(NS(id, "nearAuc")),
+                                            plotOutput(NS(id, "auc"), click = NS(id, "plot_click"), height = 750)))
                    }
                    
                    if ("APEX" %in% input$variables){
@@ -93,7 +97,6 @@ autoQC01Server <- function(id, ii,  filterValues){
                      L <- append(L, tagList(plotOutput(NS(id, "fwhm"))))
                    }
                    
-                   #tagList(plotOutput(NS(id, "auc")), plotOutput(NS(id, "fwhm")))
                   L
                  })
 
@@ -112,22 +115,24 @@ autoQC01Server <- function(id, ii,  filterValues){
                                    )
                  })
                  
+                 output$nearAuc <- renderTable({
+                   req(input$plot_click)
+                   nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
+                   # [data()$variable == 'AUC', ]
+                 })
+                 
                  output$auc <- renderPlot({
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Plotting autoQC01 AUC data ...")
                    on.exit(progress$close())
                    
-                   lattice::xyplot(log(value, 10) ~ time | variable * Instrument,
-                                   group = peptide,
-                                   data = data(),
-                                   type = 'b',
-                                   #panel = .iqrPanel,
-                                   auto.key = list(space = "right"),
-                                   main = "MODULE",
-                                   scales = list(y = list(relation = "free")),
-                                   subset = variable == 'AUC',
-                   )
-                 })
+                   ggplot2::ggplot(data(), ggplot2::aes(time, value)) +
+                     ggplot2::geom_point(ggplot2::aes(color = peptide), alpha = 0.4) +
+                     #ggplot2::scale_y_log10() +
+                     ggplot2::facet_wrap(. ~ variable, scales="free_y", ncol = 1) 
+                 }, res = 96)
+                 
+                
                  
                  output$fwhm <- renderPlot({
                    
