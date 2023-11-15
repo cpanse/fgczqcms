@@ -10,42 +10,37 @@ stopifnot(require(readr),
           require(rawrr))
 
 source('helpers.R')
-
+source('module-autoQC01.R')
 
 # define server logic ============
 function(input, output, session) {
   #  reactives =============
-  autoQC01APEX <- reactive({
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Reading autoQC01 data ...", detail = "APEX | AUC | FWHM")
-    on.exit(progress$close())
-
-    rootdir() |>
-      file.path("autoQC01-fit-apex-auc-fwhm.txt") |>
-      readr::read_delim(
-        delim = ";",
-        escape_double = FALSE,           
-	col_names =c('filename', 'time', 'peptide', 'AUC', 'APEX', 'FWHM'),
-        col_types = cols(time = col_datetime(format = "%s")),
-        trim_ws = TRUE) -> rv
-
-    rv <- rv[order(rv$time), ]
-    
-    rv$Instrument <- NA
-    rv |> .assignInstrument(coln = 'filename')
+  
+  ## >> reactiveValues defined here ##################
+  vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
+                         timeMin = (Sys.time() - (7 * 3600 * 24)),
+                         timeMax = Sys.time())
+  
+  
+  rootdir <- reactive({
+    cands <- c("/Users/cp/Downloads/dump/", "/scratch/DIAQC/qc/dump")
+    for (d in cands){
+      if (dir.exists(d))return(d)
+    }
+    NULL
   })
   
-  autoQC01APEXData <- reactive({
+  get_instrument <- reactive({
     shiny::req(input$instrument)
-    shiny::req(autoQC01APEX())
-
-    autoQC01APEXFilter <- autoQC01APEX()$Instrument %in% input$instrument & 
-      vals$timeMin < autoQC01APEX()$time & autoQC01APEX()$time < vals$timeMax
-    
-    rv <- autoQC01APEX()[autoQC01APEXFilter, ] |>
-      reshape2::melt(id.vars = c("filename", "time", "Instrument", "peptide"))
-
-    rv[rv$variable == 'APEX', ]
+    input$instrument
+    })
+  
+  autoQC01 <- autoQC01Server("autoQC01",
+                             ii = get_instrument,
+                             filterValues = vals)
+  
+  output$apex <- renderUI({
+    autoQC01UI("autoQC01")
   })
 
   ## autoQC01 ---------
@@ -381,15 +376,7 @@ function(input, output, session) {
              input$diannDays[1] <=  difftime(now, diannLong()$time, units = "days") &
              difftime(now, diannLong()$time, units = "days") < input$diannDays[2], ]
   }) 
-  
-  rootdir <- reactive({
-    cands <- c("/Users/cp/Downloads/dump/", "/scratch/DIAQC/qc/dump")
-    for (d in cands){
-      if (dir.exists(d))return(d)
-    }
-    NULL
-  })
-  
+
   rootdirraw <- reactive({
     cands <- c("/srv/www/htdocs/", "/scratch/DIAQC/qc/dump", "/Users/cp/Downloads/dump/")
     for (d in cands){
@@ -419,10 +406,6 @@ function(input, output, session) {
   })
   
 
-  ## >> reactiveValues defined here ##################
-  vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
-                              timeMin = (Sys.time() - (7 * 3600 * 24)),
-                              timeMax = Sys.time())
   
   observeEvent({ input$timeRange }, {
     #shiny::req(input$timeRange)
@@ -814,28 +797,6 @@ function(input, output, session) {
     
   })#, height = function(){400 * length(diannData()$Instrument |> unique())})
 
-  
-  output$autoQC01APEXPlot <- renderPlot({
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Plotting autoQC01 APEX ...")
-    on.exit(progress$close())
-    shiny::req(autoQC01APEXData())
-
-#    .lattice(autoQC01APEXData(),
-#             useBfabric = input$useBfabric,
-#             bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time,
-#             group = peptide)
-
-    lattice::xyplot(value ~ time | variable * Instrument, group=peptide, data = autoQC01APEXData(), type = 'b',
-                    auto.key = list(space = "bottom"),
-                    panel = function(x, y, ...){
-                      lattice::panel.xyplot(x, y, ...)
-                      try(if (input$useBfabric){
-                        lattice::panel.abline(v = bfabricInstrumentEventsFiltered()$time, col = '#FF1111')
-                      }, TRUE)
-                    })
-  })
-  
   #### autoQC01 lattice::xyplot -----------------
   output$autoQC01Plot <- renderPlot({
     shiny::req(autoQC01Data())
