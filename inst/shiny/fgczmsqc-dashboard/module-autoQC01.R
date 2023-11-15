@@ -14,7 +14,8 @@ autoQC01UI <- function(id){
   tagList(
     selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
     selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = "AUC"),
-    htmlOutput(ns("plotSelection"), width = "100%")
+    tableOutput(NS(id, "nearAuc")),
+    plotOutput(NS(id, "auc"), click = NS(id, "plot_click"), height = 600),
   )
 }
 
@@ -80,40 +81,6 @@ autoQC01Server <- function(id, ii,  filterValues){
                    rv
                  })
                  
-                 output$plotSelection <- renderUI({
-                   shiny::req(input$variables)
-                   
-                   L <- tagList()
-                   if ("AUC" %in% input$variables){
-                     L <- append(L, tagList(tableOutput(NS(id, "nearAuc")),
-                                            plotOutput(NS(id, "auc"), click = NS(id, "plot_click"), height = 750)))
-                   }
-                   
-                   if ("APEX" %in% input$variables){
-                     L <- append(L, tagList(plotOutput(NS(id, "apex"))))
-                   }
-                   
-                   if ("FWHM" %in% input$variables){
-                     L <- append(L, tagList(plotOutput(NS(id, "fwhm"))))
-                   }
-                   
-                  L
-                 })
-
-                 output$apex <- renderPlot({
-                   progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Plotting autoQC01 APEX module...")
-                   on.exit(progress$close())
-                   
-                   lattice::xyplot(value ~ time | variable * Instrument,
-                                   group = peptide,
-                                   data = data(),
-                                   type = 'b',
-                                   auto.key = list(space = "right"),
-                                   main = "MODULE",
-                                   subset = variable == 'APEX'
-                                   )
-                 })
                  
                  output$nearAuc <- renderTable({
                    req(input$plot_click)
@@ -123,39 +90,18 @@ autoQC01Server <- function(id, ii,  filterValues){
                  
                  output$auc <- renderPlot({
                    progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Plotting autoQC01 AUC data ...")
+                   progress$set(message = "Plotting autoQC01 data ...")
                    on.exit(progress$close())
                    
-                   ggplot2::ggplot(data(), ggplot2::aes(time, value)) +
+                   subset(data(), variable %in% input$variables) |> 
+                   ggplot2::ggplot(ggplot2::aes(time, value)) +
                      ggplot2::geom_point(ggplot2::aes(color = peptide), alpha = 0.4) +
+                     ggplot2::geom_line(ggplot2::aes(group = peptide, color = peptide), alpha = 0.4) +
                      #ggplot2::scale_y_log10() +
                      ggplot2::facet_wrap(. ~ variable, scales="free_y", ncol = 1) 
                  }, res = 96)
-                 
-                
-                 
-                 output$fwhm <- renderPlot({
-                   
-                   if (isFALSE("FWHM" %in% input$variables)){return(NULL)}
-                   
-                   progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Plotting autoQC01 FWHM module...")
-                   on.exit(progress$close())
-                   
-                   lattice::xyplot(value ~ time | variable * Instrument,
-                                   group = peptide,
-                                   data = data(),
-                                   type = 'b',
-                                   #panel = .iqrPanel,
-                                   auto.key = list(space = "right"),
-                                   main = "MODULE",
-                                   #ylim = quantile(data()$value[data()$variable == 'FWHM'], c(0.05, 0.95), na.rm = TRUE),
-                                   subset = variable == 'FWHM'
-                   )
-                 })
-                 
-                 
-                 return(data)
+
+                #  return(data)
                }
   )
 }
