@@ -10,6 +10,7 @@ stopifnot(require(readr),
           require(rawrr))
 
 source('helpers.R')
+source('module-config.R')
 source('module-autoQC01.R')
 
 # define server logic ============
