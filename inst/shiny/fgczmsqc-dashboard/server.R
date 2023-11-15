@@ -54,7 +54,7 @@ function(input, output, session) {
       readr::read_delim(
         delim = ";",
         escape_double = FALSE,           
-        col_types = cols(time = col_datetime(format = "%s"),                       
+        col_types = readr::cols(time = col_datetime(format = "%s"),                       
                          size = col_integer(),                       
                          n = col_integer()),
         trim_ws = TRUE)
