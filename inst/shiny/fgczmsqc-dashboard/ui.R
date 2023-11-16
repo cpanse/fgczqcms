@@ -74,7 +74,7 @@ dashboardPage(
                 fluidRow(box(verbatimTextOutput("summary"), width = 800)),
                 fluidRow(box(plotOutput("plotSummary", height = 600), width = "95%")),
                 fluidRow(box(plotOutput("plotSummaryCumsum", height = 250), width = "95%")),
-                fluidRow(box(plotOutput("plotSummaryBfabricEvents", height = 400), width = "95%")),
+                fluidRow(box(htmlOutput("bfabric"), width = "100%")),
               )
       ),
       tabItem(tabName = "rawFile",

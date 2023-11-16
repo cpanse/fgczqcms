@@ -24,16 +24,13 @@ autoQC01UI <- function(id){
 #' autoQC01Server shiny module
 #'
 #' @param id 
-#' @param ii instrument TODO(cp): should be added to filterValues by using observeEvent
 #' @param filterValues time and instrument information
 #'
 #' @return data.frame 
 #' @export
-autoQC01Server <- function(id, ii,  filterValues){
+autoQC01Server <- function(id, filterValues){
   moduleServer(id,
                function(input, output, session) {
-                 
-                 instrument <- reactive({ii()})
                  
                  ## autoQC01 ---------
                  autoQC01wide <- reactive({
@@ -58,14 +55,14 @@ autoQC01Server <- function(id, ii,  filterValues){
                  })
                  
                  autoQC01Long <- reactive({
-                   shiny::req(instrument())
+                   shiny::req(filterValues$instrument)
                    shiny::req(autoQC01wide())
                    
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Reshaping autoQC01 lm data ...")
                    on.exit(progress$close())
                    
-                   autoQC01wideFilter <- autoQC01wide()$Instrument %in% instrument() & 
+                   autoQC01wideFilter <- autoQC01wide()$Instrument %in% filterValues$instrument & 
                      filterValues$timeMin < autoQC01wide()$time & autoQC01wide()$time < filterValues$timeMax
                    
                    rv <- autoQC01wide()[autoQC01wideFilter, ] |>
@@ -148,7 +145,7 @@ autoQC01Server <- function(id, ii,  filterValues){
                    shiny::req(input$peptides)
                    #shiny::req(input$variables)
                    
-                   autoQC01APEXFilter <- autoQC01APEXwide()$Instrument %in% instrument() &
+                   autoQC01APEXFilter <- autoQC01APEXwide()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < autoQC01APEXwide()$time & autoQC01APEXwide()$time < filterValues$timeMax &
                      autoQC01APEXwide()$peptide %in% input$peptides
                    

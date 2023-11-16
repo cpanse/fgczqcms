@@ -151,3 +151,14 @@
   plot(0,0, xlab = '', ylab = '', type = 'n', axes = FALSE)
   text(0, 0, "missing\ndata or plot", cex=5)
 }
+
+.testBfabric <- function(){
+  bfabricShiny::readPages(login,
+                          webservicepassword,
+                          endpoint = 'user',
+                          query = list(login = 'cpanse'),
+                          posturl = bfabricposturl) -> rv
+  
+  stopifnot(rv[[1]]$login == 'cpanse')
+  rv[[1]]$login == 'cpanse'
+}

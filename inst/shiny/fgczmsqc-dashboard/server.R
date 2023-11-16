@@ -12,6 +12,7 @@ stopifnot(require(readr),
 source('helpers.R')
 source('module-config.R')
 source('module-autoQC01.R')
+source('module-bfabricInstrumentEvent.R')
 
 # define server logic ============
 function(input, output, session) {
@@ -20,7 +21,8 @@ function(input, output, session) {
   ## >> reactiveValues defined here ##################
   vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
                          timeMin = (Sys.time() - (7 * 3600 * 24)),
-                         timeMax = Sys.time())
+                         timeMax = Sys.time(),
+                         instrument = NULL)
   
   
   rootdir <- reactive({
@@ -31,91 +33,21 @@ function(input, output, session) {
     NULL
   })
   
-  get_instrument <- reactive({
-    shiny::req(input$instrument)
-    input$instrument
-    })
   
-  autoQC01 <- autoQC01Server("autoQC01",
-                             ii = get_instrument,
-                             filterValues = vals)
+  autoQC01 <- autoQC01Server("autoQC01", filterValues = vals)
+  
+  BFabric <- bfabricInstrumentEventServer("bfabric01", filterValues = vals)
   
   output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")
   })
-
-  ## Fetch bfabricInstrumentEventType
-  bfabricInstrumentEventTypeFetch <- reactive({
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Fetching instrument event types ...")
-    on.exit(progress$close())
-    
-    bfabricShiny::readPages(login,
-                            webservicepassword,
-                            endpoint='instrumenteventtype',
-                            query=list(),
-                            posturl=bfabricposturl) |>
-      lapply(function(x){data.frame(id=x$`_id`, name=x$name)}) |>
-      Reduce(f = rbind)
+  
+  output$bfabric <- renderUI({
+    #shiny::req(input$useBFabric)
+    shiny::req(BFabric$bfabricInstrumentEventsFiltered())
+    bfabricInstrumentEventUI("bfabric01")
   })
   
-  ## Fetch bfabricInstrumentEvents  -------------
-  bfabricInstrumentFetch <- reactive({
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Fetching instrument events ...")
-    on.exit(progress$close())
-    
-    rv <- bfabricShiny::readPages(login,
-                                  webservicepassword,
-                                  endpoint = 'instrumentevent',
-                                  query = list(instrumentid = .getInstruments() |>
-                                                 as.integer() |> as.list()),
-                                  posturl = bfabricposturl)  |>
-      lapply( FUN=function(x){
-        if (all(c('description', 'datetime') %in% names(x))){
-          df <- data.frame(time = (x$datetime |> as.POSIXlt()),
-                           instrumentid = as.integer(x$instrument$`_id`),
-                           description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
-                           instrumenteventtypeid = x$instrumenteventtype$`_id`)
-          return(df)
-        }
-        NULL
-      }) |>
-      Reduce(f = rbind)  
-    
-    return(rv[order(rv$time), ])
-  })
-  
-  bfabricInstrumentEvents <- reactive({
-    if(input$useBfabric){
-      
-      ## TODO(cp): assign instrument event type names
-      S <- bfabricInstrumentFetch()
-      II <- .getInstruments()
-      IET <- bfabricInstrumentEventTypeFetch()
-      
-      S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
-      S$InstrumentEventTypeName <- IET[match(S$instrumenteventtypeid, IET$id), 'name']
-      return(S)
-    }else{NULL}
-  })
-  
-  bfabricInstrumentEventsFiltered <- reactive({
-    shiny::req(bfabricInstrumentEvents())
-    shiny::req(input$instrument)
-    
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Filter B-Fabric instrument events ...")
-    on.exit(progress$close())
-    
-    now <- Sys.time()
-    
-    # TODO(cp): dix dependency on the comet time slider
-    instrumentFilter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[input$instrument] |> unlist() |> as.integer()) &
-      vals$timeMin <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < vals$timeMax
-    
-    bfabricInstrumentEvents()[instrumentFilter, ]
-  })
   
   rawFileHeader <- reactive({
     shiny::req(input$file)
@@ -351,7 +283,9 @@ function(input, output, session) {
   })
   
 
-  
+  observeEvent({ input$instrument }, {
+    vals$instrument <- input$instrument
+  })
   observeEvent({ input$timeRange }, {
     #shiny::req(input$timeRange)
     
@@ -720,7 +654,7 @@ function(input, output, session) {
     
     .lattice(cometData(),
              useBfabric = input$useBfabric,
-             bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time,
+             bfabricInstrumentEvents = BFabric$bfabricInstrumentEventsFiltered()$time,
              group = scanType)
   
   })# height = function(){400 * length(cometData()$instrument |> unique())})
@@ -729,7 +663,7 @@ function(input, output, session) {
   output$diannPlot <- renderPlot({
     shiny::req(diannData())
     
-    .lattice(diannData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
+    .lattice(diannData(), input$useBfabric, BFabric$bfabricInstrumentEventsFiltered()$time)
     
   })#, height = function(){400 * length(diannData()$Instrument |> unique())})
  
@@ -793,22 +727,7 @@ function(input, output, session) {
              scales = list(x = list(rot=45)))
   })
   
-  output$plotSummaryBfabricEvents <- renderPlot({
-    shiny::req(input$useBfabric)
-    shiny::req(bfabricInstrumentEvents())
-    
-    n <- length(unique(bfabricInstrumentEvents()$instrumentid))
-    
-    lattice::dotplot(~ time | InstrumentName,
-                     group = InstrumentEventTypeName,
-                     layout = c(1, n),
-                     data = bfabricInstrumentEvents(),
-                     cex = 1,
-                     pch = 22,
-                     auto.key = list(space = "right", pch=22),
-                     main = 'B-Fabric instrument events grouped by event type',
-    )
-  })
+
   
   ## printSummary --------
   output$summary <- renderPrint({
@@ -836,17 +755,17 @@ function(input, output, session) {
   
   output$autoQC01BfabricInstrumentEventsOutput <- renderUI({
     shiny::req(input$useBfabric)
-    shiny::req(bfabricInstrumentEventsFiltered())
+    shiny::req(BFabric$bfabricInstrumentEventsFiltered())
     
-    DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+    DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
     
   })
   
   output$cometBfabricInstrumentEventsOutput <- renderUI({
     shiny::req(input$useBfabric)
-    shiny::req(bfabricInstrumentEventsFiltered())
+    shiny::req(BFabric$bfabricInstrumentEventsFiltered())
     
-    DT::renderDataTable({ bfabricInstrumentEventsFiltered() })
+    DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
     
   })
   
