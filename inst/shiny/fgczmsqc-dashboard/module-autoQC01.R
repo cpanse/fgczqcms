@@ -16,6 +16,8 @@ autoQC01UI <- function(id){
     selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = "AUC"),
     tableOutput(NS(id, "nearAuc")),
     plotOutput(NS(id, "auc"), click = NS(id, "plot_click"), height = 600),
+    fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
+    fluidRow(box(plotOutput(NS(id, "autoQC01Plot")), height = "55%", width = "100%"))
   )
 }
 
@@ -33,6 +35,86 @@ autoQC01Server <- function(id, ii,  filterValues){
                  
                  instrument <- reactive({ii()})
                  
+                 ## autoQC01 ---------
+                 autoQC01wide <- reactive({
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Reading autoQC01 lm data ...")
+                   on.exit(progress$close())
+                   
+                   config <- configServer("config1")
+                   
+                   rv <- config$rootdir |>
+                     file.path("autoQC01.csv") |>
+                     readr::read_delim(
+                       delim = ";",
+                       escape_double = FALSE,           
+                       col_types = readr::cols(time = col_datetime(format = "%s"),                       
+                                               size = col_integer(),                       
+                                               n = col_integer()),
+                       trim_ws = TRUE)
+                   
+                   rv$Instrument <- NA
+                   rv |> .assignInstrument(coln = 'filename')
+                 })
+                 
+                 autoQC01Long <- reactive({
+                   shiny::req(instrument())
+                   shiny::req(autoQC01wide())
+                   
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Reshaping autoQC01 lm data ...")
+                   on.exit(progress$close())
+                   
+                   autoQC01wideFilter <- autoQC01wide()$Instrument %in% instrument() & 
+                     filterValues$timeMin < autoQC01wide()$time & autoQC01wide()$time < filterValues$timeMax
+                   
+                   rv <- autoQC01wide()[autoQC01wideFilter, ] |>
+                     reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
+                 })
+                 
+                 dataPeptideFit <- reactive({
+                   shiny::req(autoQC01Long())
+                   
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Filtering autoQC01 data ...")
+                   on.exit(progress$close())
+                   
+                   now <- Sys.time()
+                   
+                   autoQC01LongFilter <- autoQC01Long()$variable %in% input$autoQC01Variables 
+                   
+                   autoQC01Long()[autoQC01LongFilter, ]
+                 })
+                 
+                  
+                 autoQC01Variables <- reactive({
+                   autoQC01Long()$variable |> unique()
+                 })
+                 
+                 output$autoQC01Variable <- renderUI({
+                   selectInput(NS(id,'autoQC01Variables'), 'Variables',
+                               autoQC01Variables(),
+                               multiple = TRUE,
+                               selected = c('slope', 'r.squared', 'intercept'))
+                 })
+                 
+                 #### autoQC01 lattice::xyplot -----------------
+                 output$autoQC01Plot <- renderPlot({
+                   shiny::req(dataPeptideFit())
+                   
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Plotting autoQC01 lm ...")
+                   on.exit(progress$close())
+                   
+                   .lattice(dataPeptideFit())
+                            #useBfabric = input$useBfabric,
+                            #bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time)
+                   
+                 })
+                 
+                 ############################
+                 
+                 ## data AUC|APEX|FWHM ==================
                  autoQC01APEXwide <- reactive({
                    fn <- "autoQC01-fit-apex-auc-fwhm.txt"
                    progress <- shiny::Progress$new(session = session)
@@ -59,6 +141,8 @@ autoQC01Server <- function(id, ii,  filterValues){
                    rv |> .assignInstrument(coln = 'filename')
                  })
                  
+                 
+                 
                  data <- reactive({
                    shiny::req(autoQC01APEXwide())
                    shiny::req(input$peptides)
@@ -67,7 +151,7 @@ autoQC01Server <- function(id, ii,  filterValues){
                    autoQC01APEXFilter <- autoQC01APEXwide()$Instrument %in% instrument() &
                      filterValues$timeMin < autoQC01APEXwide()$time & autoQC01APEXwide()$time < filterValues$timeMax &
                      autoQC01APEXwide()$peptide %in% input$peptides
-                 
+                   
                    autoQC01APEXwide()[autoQC01APEXFilter, ] |>
                      reshape2::melt(id.vars = c("filename", "time", "Instrument", "peptide")) -> rv
                    
@@ -82,26 +166,29 @@ autoQC01Server <- function(id, ii,  filterValues){
                  })
                  
                  
+                 ## -----------click table ----------------
                  output$nearAuc <- renderTable({
                    req(input$plot_click)
                    nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
                    # [data()$variable == 'AUC', ]
                  })
                  
+                 ## -----------plot AUC | APEX | FWHM ggplot2::ggplot -----------------
                  output$auc <- renderPlot({
                    progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Plotting autoQC01 data ...")
+                   progress$set(message = "Plotting peptide data ...",
+                                detail  = paste0(input$variables, collapse = ' |'))
                    on.exit(progress$close())
                    
                    subset(data(), variable %in% input$variables) |> 
-                   ggplot2::ggplot(ggplot2::aes(time, value)) +
+                     ggplot2::ggplot(ggplot2::aes(time, value)) +
                      ggplot2::geom_point(ggplot2::aes(color = peptide), alpha = 0.4) +
                      ggplot2::geom_line(ggplot2::aes(group = peptide, color = peptide), alpha = 0.4) +
                      #ggplot2::scale_y_log10() +
                      ggplot2::facet_wrap(. ~ variable, scales="free_y", ncol = 1) 
                  }, res = 96)
-
-                #  return(data)
+                 
+                 #  return(data)
                }
   )
 }

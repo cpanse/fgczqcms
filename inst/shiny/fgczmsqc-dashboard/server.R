@@ -40,61 +40,10 @@ function(input, output, session) {
                              ii = get_instrument,
                              filterValues = vals)
   
-  output$apex <- renderUI({
+  output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")
   })
 
-  ## autoQC01 ---------
-  autoQC01wide <- reactive({
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Reading autoQC01 data ...")
-    on.exit(progress$close())
-    
-    rv <- rootdir() |>
-      file.path("autoQC01.csv") |>
-      readr::read_delim(
-        delim = ";",
-        escape_double = FALSE,           
-        col_types = readr::cols(time = col_datetime(format = "%s"),                       
-                         size = col_integer(),                       
-                         n = col_integer()),
-        trim_ws = TRUE)
-    
-    rv$Instrument <- NA
-    rv |> .assignInstrument(coln = 'filename')
-  })
-  
-  autoQC01Long <- reactive({
-    shiny::req(input$instrument)
-    shiny::req(autoQC01wide())
-    shiny::req(input$autoQC01TimeRange)
-    
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Reshaping autoQC01 data ...")
-    on.exit(progress$close())
-    
-    autoQC01wideFilter <- autoQC01wide()$Instrument %in% input$instrument & 
-      vals$timeMin < autoQC01wide()$time & autoQC01wide()$time < vals$timeMax
-    
-    rv <- autoQC01wide()[autoQC01wideFilter, ] |>
-      reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
-  })
-  
-  autoQC01Data <- reactive({
-    shiny::req(autoQC01Long())
-    
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Filtering autoQC01 data ...")
-    on.exit(progress$close())
-    
-    now <- Sys.time()
-  
-    autoQC01LongFilter <- autoQC01Long()$variable %in% input$autoQC01Variables 
-      
-    autoQC01Long()[autoQC01LongFilter, ]
-  })
-  
-  
   ## Fetch bfabricInstrumentEventType
   bfabricInstrumentEventTypeFetch <- reactive({
     progress <- shiny::Progress$new(session = session)
@@ -112,12 +61,9 @@ function(input, output, session) {
   
   ## Fetch bfabricInstrumentEvents  -------------
   bfabricInstrumentFetch <- reactive({
-    
-    
     progress <- shiny::Progress$new(session = session)
     progress$set(message = "Fetching instrument events ...")
     on.exit(progress$close())
-    
     
     rv <- bfabricShiny::readPages(login,
                                   webservicepassword,
@@ -316,9 +262,7 @@ function(input, output, session) {
     cometLong()[cometFilter, ]
   }) 
   
-  autoQC01Variables <- reactive({
-    autoQC01Long()$variable |> unique()
-  })
+
   
   cometVariables <- reactive({
     cometLong()$variable |> unique()
@@ -391,7 +335,7 @@ function(input, output, session) {
     progress$set(message = "Composing file list ...")
     on.exit(progress$close())
     
-    c( (autoQC01Data()$filename |> unique()),
+    c( #(autoQC01Data()$filename |> unique()),
       (diannData()$File.Name |> unique()),
       (cometData()$File.Name |> unique())) |>
       unique() |>
@@ -751,16 +695,7 @@ function(input, output, session) {
  
   
   #### cometVariable ------------
-  output$autoQC01Variable <- renderUI({
-    
-    defaulVariables <- c('slope', 'r.squared', 'intercept')
-
-    selectInput('autoQC01Variables', 'Variables',
-                autoQC01Variables(),
-                multiple = TRUE,
-                selected = defaulVariables)
-    
-  })
+ 
   
   
   output$cometVariable <- renderUI({
@@ -797,28 +732,14 @@ function(input, output, session) {
     .lattice(diannData(), input$useBfabric, bfabricInstrumentEventsFiltered()$time)
     
   })#, height = function(){400 * length(diannData()$Instrument |> unique())})
-
-  #### autoQC01 lattice::xyplot -----------------
-  output$autoQC01Plot <- renderPlot({
-    shiny::req(autoQC01Data())
-    
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Plotting autoQC01 data ...")
-    on.exit(progress$close())
-    
-    .lattice(autoQC01Data(),
-             useBfabric = input$useBfabric,
-             bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time)
-    
-  })#, height = function(){400 * length(autoQC01Data()$Instrument |> unique())})
-  
+ 
   
   ## Summary ============
   summaryData <- reactive({
-    d1 <- data.frame(time = autoQC01wide()$time,
-                     size = autoQC01wide()$size,
-                     Instrument = autoQC01wide()$Instrument,
-                     method = "Biognosys iRT (autoQC01)")
+    #d1 <- data.frame(time = autoQC01wide()$time,
+    #                 size = autoQC01wide()$size,
+    #                 Instrument = autoQC01wide()$Instrument,
+    #                 method = "Biognosys iRT (autoQC01)")
     
     d2 <- data.frame(time = cometWide()$time,
                      size = cometWide()$size,
@@ -831,7 +752,7 @@ function(input, output, session) {
                      method = "DIA (DIA-NN)")
     
     
-    (list(d1, d2, d3) |>
+    (list(d2, d3) |>
         Reduce(f = rbind))
   })
   
