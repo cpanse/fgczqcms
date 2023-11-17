@@ -12,12 +12,20 @@ autoQC01UI <- function(id){
   v <- c("APEX", "AUC", "FWHM")
   
   tagList(
-    selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
-    selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = "AUC"),
-    tableOutput(NS(id, "nearAuc")),
-    plotOutput(NS(id, "auc"),
-               click = NS(id, "plot_click"),
-               height = 600),
+    shinydashboard::box(
+      fluidRow(
+        column(9, offset = 0,tagList(
+          plotOutput(NS(id, "auc"),
+                     click = NS(id, "plot_click"),
+                     height = 600))),
+        column(3, offset = 0,tagList(
+          selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
+          selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = "AUC"),
+          tableOutput(NS(id, "nearAuc")),
+        )
+        )
+      ), footer = "click to analyze selected raw file below.",
+      width = 12, title = "AUC | APEX | FWHM"),
     fluidRow(rawrrUI(NS(id, "rawrr01"))),
     #verbatimTextOutput(NS(id, "dblclick_info")),
     fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
@@ -148,9 +156,10 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    rv[order(rv$time), ] -> rv
                    message(paste0("autoQC01 module APEX wide nrow: ", nrow(rv)))
                    
-                   progress$set(detail = "checking if file.exists", value = 3/5)
-                   rv$file.exists <- file.path(config$rootdirraw, rv$filename) |> sapply(FUN = file.exists)
-                                      
+                   progress$set(detail = "skip checking if file.exists", value = 3/5)
+                   #rv$file.exists <- file.path(config$rootdirraw, rv$filename) |> sapply(FUN = file.exists)
+                   rv$file.exists <- TRUE
+                   
                    progress$set(detail = "assigning instrumentss", value=  4/5)                   
                    rv$Instrument <- NA
                    rv |> .assignInstrument(coln = 'filename')
@@ -175,7 +184,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    
                    
                    progress$set(detail = "log AUC", value = 3/3)
-                   rv$value[rv$variable == "AUC"] <- log(rv$value[rv$variable == "AUC"], 10) 
+                   rv$value[rv$variable == "AUC"] <- log(rv$value[rv$variable == "AUC"], 2) 
                    
                    message(paste0("autoQC01 module APEX long nrow: ", nrow(rv)))
                    message(paste0(input$peptides, collapse = ', '))
@@ -200,8 +209,8 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    req(input$plot_click)
                    np <- nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
                    message(paste0("plot_click: ", np$filename, collapse = " | "))
-                   np
-                 })
+                   t(np[1,])
+                 }, rownames = T, colnames = F)
 
                  ## observeEvent =================
                  observeEvent(input$plot_click, {

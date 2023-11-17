@@ -1,5 +1,35 @@
 #R
 
+.rawrrChromatogramSet <- function (x, diagnostic = TRUE,
+                                   xlim = range(unlist(lapply(x,
+                                       function(o) { o$times }))), ...) 
+{
+  stopifnot(attr(x, "class") == "rawrrChromatogramSet")
+  if (attr(x, "type") == "xic") {
+    plot(0, 0, type = "n", xlim = xlim,
+         ylim = range(unlist(lapply(x, function(o) {
+                                                        o$intensities
+                                                      }))), frame.plot = FALSE, xlab = "Retention Time [min]", 
+         ylab = "Intensities", ...)
+    cm <- hcl.colors(length(x), "Set 2")
+    mapply(function(o, co) {
+      lines(o$times, o$intensities, col = co)
+      points(o$times, o$intensities, col = co, cex=0.5)
+    }, x, cm)
+    legend("topleft", as.character(sapply(x, function(o) {
+      o$mass
+    })), col = cm, pch = 16, title = "target mass [m/z]", 
+    bty = "n", cex = 0.75)
+    if (diagnostic) {
+      legend("topright", legend = paste(c("File: ", "Filter: ", 
+                                          "Type: ", "Tolerance: "), c(basename(attr(x, 
+                                                                                    "file")), attr(x, "filter"), attr(x, "type"), 
+                                                                      attr(x, "tol"))), bty = "n", cex = 0.75, text.col = "black")
+    }
+  }
+  invisible(x)
+}
+
 .isFWHM<-function(FWHM, x) {
   for (i.x in x){
     if (FWHM$x1 < i.x & i.x < (FWHM$x1 + FWHM$fwhm))
@@ -53,6 +83,24 @@
     rv$xx <- fittedPeak$xx
     rv$yp <- fittedPeak$yp
     rv$r.squared <- fittedPeak$r.squared
+    rv
+  })
+}
+
+.extractMaximumPeak <- function (y) 
+{
+  idx <- which(y == max(y))[1]
+  
+  seq(idx - 10 , idx + 10)
+}
+
+.pickPeak.rawrrChromatogram <- function (x) 
+{
+  lapply(x, function(y) {
+    idx <- .extractMaximumPeak(y$intensities)
+    rv <- y
+    rv$times <- y$times[idx]
+    rv$intensities <- y$intensities[idx]
     rv
   })
 }

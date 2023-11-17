@@ -349,13 +349,15 @@ function(input, output, session) {
     if (vals$timeMin < (now - (vals$timeRangeInSecs))){
       vals$timeMin <- (now - (vals$timeRangeInSecs)) + 1
     }
+    
+    shinydashboard::box(
     sliderInput("autoQC01TimeRange", "Observation range:",
                 min = (now - (vals$timeRangeInSecs)),
                 max = now,
                 value = c(vals$timeMin, vals$timeMax),
                 timeFormat = "%F",
                 step = 3600 * 24,
-                width = "95%")
+                width = "95%"), footer = "choose time range of autoQC01 files.", width = 12)
   })
   
   output$cometTimeSlider <- renderUI({
