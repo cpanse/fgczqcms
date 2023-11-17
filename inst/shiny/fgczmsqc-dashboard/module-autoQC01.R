@@ -15,8 +15,14 @@ autoQC01UI <- function(id){
     selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
     selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = "AUC"),
     tableOutput(NS(id, "nearAuc")),
-    plotOutput(NS(id, "auc"), click = NS(id, "plot_click"), height = 600),
+    plotOutput(NS(id, "auc"),
+               click = NS(id, "plot_click"),
+               height = 600),
+    htmlOutput(NS(id, "nearChromatogram")),
+    #fluidRow(htmlOutput(NS(id, "nearChromatogram"))),
+    #verbatimTextOutput(NS(id, "dblclick_info")),
     fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
+    fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
     fluidRow(box(plotOutput(NS(id, "autoQC01Plot")), height = "55%", width = "100%"))
   )
 }
@@ -28,7 +34,7 @@ autoQC01UI <- function(id){
 #'
 #' @return data.frame 
 #' @export
-autoQC01Server <- function(id, filterValues){
+autoQC01Server <- function(id, filterValues, BFabric){
   moduleServer(id,
                function(input, output, session) {
                  
@@ -103,10 +109,9 @@ autoQC01Server <- function(id, filterValues){
                    progress$set(message = "Plotting autoQC01 lm ...")
                    on.exit(progress$close())
                    
-                   .lattice(dataPeptideFit())
-                            #useBfabric = input$useBfabric,
-                            #bfabricInstrumentEvents = bfabricInstrumentEventsFiltered()$time)
-                   
+                   .lattice(dataPeptideFit(),
+                            useBfabric = filterValues$useBFabric,
+                            bfabricInstrumentEvents = BFabric$bfabricInstrumentEventsFiltered()$time)
                  })
                  
                  ############################
@@ -116,7 +121,7 @@ autoQC01Server <- function(id, filterValues){
                    fn <- "autoQC01-fit-apex-auc-fwhm.txt"
                    progress <- shiny::Progress$new(session = session)
                    msg <- paste0("Reading ", fn)
-                   progress$set(message = msg, detail = "APEX | AUC | FWHM")
+                   progress$set(message = msg, detail = "APEX | AUC | FWHM", value = 1/5)
                    on.exit(progress$close())
                    
                    config <- configServer("config1")
@@ -131,28 +136,37 @@ autoQC01Server <- function(id, filterValues){
                        trim_ws = TRUE) -> rv
                    
                    ## TODO(cp): perform the ordering before!
+                   progress$set(detail = "ordering ...", value = 2/5)                  
                    rv[order(rv$time), ] -> rv
                    message(paste0("autoQC01 module APEX wide nrow: ", nrow(rv)))
                    
+                   progress$set(detail = "checking if file.exists", value = 3/5)
+                   rv$file.exists <- file.path(config$rootdirraw, rv$filename) |> sapply(FUN = file.exists)
+                                      
+                   progress$set(detail = "assigning instrumentss", value=  4/5)                   
                    rv$Instrument <- NA
                    rv |> .assignInstrument(coln = 'filename')
                  })
-                 
-                 
                  
                  data <- reactive({
                    shiny::req(autoQC01APEXwide())
                    shiny::req(input$peptides)
                    #shiny::req(input$variables)
                    
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Reshaping autoQC01", detail = "Filtering", value = 1/3)
+                   on.exit(progress$close())
+                   
                    autoQC01APEXFilter <- autoQC01APEXwide()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < autoQC01APEXwide()$time & autoQC01APEXwide()$time < filterValues$timeMax &
                      autoQC01APEXwide()$peptide %in% input$peptides
                    
+                   progress$set(detail = "reshape2::melt", value = 2/3)
                    autoQC01APEXwide()[autoQC01APEXFilter, ] |>
-                     reshape2::melt(id.vars = c("filename", "time", "Instrument", "peptide")) -> rv
+                     reshape2::melt(id.vars = c("filename", "file.exists", "time", "Instrument", "peptide")) -> rv
                    
                    
+                   progress$set(detail = "log AUC", value = 3/3)
                    rv$value[rv$variable == "AUC"] <- log(rv$value[rv$variable == "AUC"], 10) 
                    
                    message(paste0("autoQC01 module APEX long nrow: ", nrow(rv)))
@@ -162,12 +176,43 @@ autoQC01Server <- function(id, filterValues){
                    rv
                  })
                  
+                 ## -----------dblclick table ----------------
+                 output$dblclick_info <- renderPrint({
+                   #req(input$dblplot_click)
+                   
+                   cat("input$plot_dblclick:\n")
+                   str(input$plot_dblclick)
+                   np <- nearPoints(data(), input$dblplot_click, xvar = "time", yvar = "value")
+                   message(paste0("plot_dblclick: ", np$filename, collapse = " | "))
+                   #str(paste0(np$filename, collapse = " | "))
+                 })
                  
                  ## -----------click table ----------------
                  output$nearAuc <- renderTable({
                    req(input$plot_click)
-                   nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
-                   # [data()$variable == 'AUC', ]
+                   np <- nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
+                   message(paste0("plot_click: ", np$filename, collapse = " | "))
+                   np
+                 })
+                 
+                 output$nearChromatogram <- renderUI({
+                   req(input$plot_click)
+                   np <- nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
+                   
+                   message(paste0("plot_click: ", np$filename, collapse = " | "))
+                   
+                   config <- configServer("config2")
+                   fn <- file.path(config$rootdirraw, np$filename[1])
+                   
+                   if (file.exists(fn)){
+                     message(paste0(fn , " exists."))
+                     rawrrS <- rawrrServer("rawrr01", fn, .iRTmz()[names(.iRTmz()) %in% input$peptides])
+                     ## TODO(cp): make rawrrUI work
+                     #rawrrUI("rawrr01")
+                     renderPlot({rawrr:::plot.rawrrChromatogramSet(rawrrS())})
+                   }else{
+                     renderPlot({.missing()})
+                   }
                  })
                  
                  ## -----------plot AUC | APEX | FWHM ggplot2::ggplot -----------------
@@ -182,8 +227,20 @@ autoQC01Server <- function(id, filterValues){
                      ggplot2::geom_point(ggplot2::aes(color = peptide), alpha = 0.4) +
                      ggplot2::geom_line(ggplot2::aes(group = peptide, color = peptide), alpha = 0.4) +
                      #ggplot2::scale_y_log10() +
-                     ggplot2::facet_wrap(. ~ variable, scales="free_y", ncol = 1) 
+                     ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)  -> gp
+                   
+                   if (filterValues$useBFabric){
+                     gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time, linetype="dashed", 
+                                  color = "red", size = 1) -> gp
+                   }
+                   
+                   gp
                  }, res = 96)
+                 
+                 output$instrumentEventsOutput <- renderUI({
+                   shiny::req(BFabric$bfabricInstrumentEventsFiltered())
+                   DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
+                 })
                  
                  #  return(data)
                }

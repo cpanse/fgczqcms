@@ -10,6 +10,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                function(input, output, session) {
                  ## Fetch bfabricInstrumentEventType
                  bfabricInstrumentEventTypeFetch <- reactive({
+                   #if (filterValues$useBfabric == FALSE) return (NULL)
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Fetching instrument event types ...")
                    on.exit(progress$close())

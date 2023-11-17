@@ -13,6 +13,7 @@ source('helpers.R')
 source('module-config.R')
 source('module-autoQC01.R')
 source('module-bfabricInstrumentEvent.R')
+source('module-rawrr.R')
 
 # define server logic ============
 function(input, output, session) {
@@ -22,7 +23,8 @@ function(input, output, session) {
   vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
                          timeMin = (Sys.time() - (7 * 3600 * 24)),
                          timeMax = Sys.time(),
-                         instrument = NULL)
+                         instrument = NULL,
+                         useBFabric = FALSE)
   
   
   rootdir <- reactive({
@@ -33,10 +35,10 @@ function(input, output, session) {
     NULL
   })
   
-  
-  autoQC01 <- autoQC01Server("autoQC01", filterValues = vals)
-  
   BFabric <- bfabricInstrumentEventServer("bfabric01", filterValues = vals)
+  
+  autoQC01 <- autoQC01Server("autoQC01", filterValues = vals, BFabric = BFabric)
+  
   
   output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")
@@ -282,6 +284,9 @@ function(input, output, session) {
       unlist() 
   })
   
+  observeEvent({ input$useBfabric }, {
+    vals$useBFabric <- input$useBfabric
+  })
 
   observeEvent({ input$instrument }, {
     vals$instrument <- input$instrument
@@ -293,8 +298,8 @@ function(input, output, session) {
     if (timeDiff < as.integer(input$timeRange) * 3600 * 24){
       vals$timeRangeInSecs <- as.integer(input$timeRange) * 3600 * 24
       
-      if (vals$timeMin > Sys.time() - 7*24*3600){
-        vals$timeMin <- Sys.time() - 7*24*3600
+      if (vals$timeMin > Sys.time() - 21*24*3600){
+        vals$timeMin <- Sys.time() - 21*24*3600
       }
      
       if (vals$timeMax < Sys.time()){
@@ -753,13 +758,7 @@ function(input, output, session) {
     capture.output(rawFileHeader())
   })
   
-  output$autoQC01BfabricInstrumentEventsOutput <- renderUI({
-    shiny::req(input$useBfabric)
-    shiny::req(BFabric$bfabricInstrumentEventsFiltered())
-    
-    DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
-    
-  })
+  
   
   output$cometBfabricInstrumentEventsOutput <- renderUI({
     shiny::req(input$useBfabric)

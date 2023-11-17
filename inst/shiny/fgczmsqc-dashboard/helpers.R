@@ -162,3 +162,16 @@
   stopifnot(rv[[1]]$login == 'cpanse')
   rv[[1]]$login == 'cpanse'
 }
+
+
+.iRTmz <- function(){
+  iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384,
+             683.8282, 683.8541, 699.3388, 726.8361, 776.9301)
+  
+  names(iRTmz) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
+                    "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
+                    "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
+                    "LFLQFGAQGSPFLK")
+  
+  iRTmz
+}
