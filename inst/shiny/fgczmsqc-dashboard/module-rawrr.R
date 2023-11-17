@@ -108,7 +108,7 @@ rawrrServer <- function(id, vals){
                               ylim = range(c(x$intensities, x$yp)),
                               xlim = range(APEX - 2 * FWHM$fwhm, APEX + 2 * FWHM$fwhm),
                               main = paste0(peptide, x$mass, collapse = " | "));
-                         legend("topleft", legend = c(sprintf("R^2: %.1e", r.squared)), cex = 0.5)
+                         # legend("topleft", legend = c(sprintf("R^2: %.1e", r.squared)), cex = 0.5)
                          lines(x$xx, x$yp, col='red');
                          segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
                          abline(v = APEX, col = 'blue')

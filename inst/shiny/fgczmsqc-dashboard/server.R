@@ -44,13 +44,6 @@ function(input, output, session) {
     autoQC01UI("autoQC01")
   })
   
-  output$bfabric <- renderUI({
-    #shiny::req(input$useBFabric)
-    shiny::req(BFabric$bfabricInstrumentEventsFiltered())
-    bfabricInstrumentEventUI("bfabric01")
-  })
-  
-  
   rawFileHeader <- reactive({
     shiny::req(input$file)
     

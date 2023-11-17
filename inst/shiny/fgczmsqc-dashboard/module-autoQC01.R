@@ -112,9 +112,14 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    progress$set(message = "Plotting autoQC01 lm ...")
                    on.exit(progress$close())
                    
-                   .lattice(dataPeptideFit(),
-                            useBfabric = filterValues$useBFabric,
-                            bfabricInstrumentEvents = BFabric$bfabricInstrumentEventsFiltered()$time)
+                   if (filterValues$useBFabric){
+                     .lattice(dataPeptideFit(),
+                              useBfabric = filterValues$useBFabric,
+                              bfabricInstrumentEvents = BFabric$bfabricInstrumentEventsFiltered()$time)
+                   }else{
+                     .lattice(dataPeptideFit())
+                   }
+                   
                  })
                  
                  ############################
@@ -234,8 +239,10 @@ autoQC01Server <- function(id, filterValues, BFabric){
                  }, res = 96)
                  
                  output$instrumentEventsOutput <- renderUI({
-                   shiny::req(BFabric$bfabricInstrumentEventsFiltered())
-                   DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
+                   if (filterValues$useBFabric){
+                     shiny::req(BFabric$bfabricInstrumentEventsFiltered())
+                     DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
+                   }
                  })
                  
                  #  return(data)

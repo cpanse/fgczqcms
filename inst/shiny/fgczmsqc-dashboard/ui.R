@@ -1,7 +1,7 @@
 #R
 ## 
 library(shinydashboard)
-
+source('module-bfabricInstrumentEvent.R')
 dashboardPage(
   dashboardHeader(title = "FGCZ MS QC"),
   dashboardSidebar(
@@ -73,7 +73,7 @@ dashboardPage(
                 fluidRow(box(verbatimTextOutput("summary"), width = 800)),
                 fluidRow(box(plotOutput("plotSummary", height = 600), width = "95%")),
                 fluidRow(box(plotOutput("plotSummaryCumsum", height = 250), width = "95%")),
-                fluidRow(box(htmlOutput("bfabric"), width = "100%")),
+                fluidRow(box(bfabricInstrumentEventUI("bfabric01"), width = "100%")),
               )
       ),
       tabItem(tabName = "rawFile",
