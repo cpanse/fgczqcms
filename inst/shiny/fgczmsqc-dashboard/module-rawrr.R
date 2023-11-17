@@ -10,7 +10,7 @@ rawrrUI <- function(id){
     HTML("rawrr module"),
     a(img(src="https://img.shields.io/badge/JPR-10.1021%2Facs.jproteome.0c00866-brightgreen")),
     fluidRow(
-      column(6, offset = 0, htmlOutput(NS(id, "plotChromatograms"))),
+      column(6, offset = 0, plotOutput(NS(id, "plotChromatograms"))),
       column(6, offset = 0, plotOutput(NS(id, "plotProfiles"))),
       #column(6, offset = 0, imageOutput("rawrr_logo.png", width = "10%")),
     )
@@ -59,20 +59,21 @@ rawrrServer <- function(id, vals){
                    #}
                  })
                  
-                 output$plotChromatograms <- renderUI({
-                   shiny::req(peptideProfile())
-                   
-                   progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "plotting chromatograms ...")
-                   on.exit(progress$close())
-                   
-                   message("plotting chromatograms ...")
-                   
-                   
-                   renderPlot({ rawrr:::plot.rawrrChromatogramSet(peptideProfile()) })
-                   
+                 output$plotChromatograms <- renderPlot({
+                   if (class(shiny::req(peptideProfile())) == "rawrrChromatogramSet"){
+                     progress <- shiny::Progress$new(session = session)
+                     progress$set(message = "Plotting chromatograms ...")
+                     on.exit(progress$close())
+                     
+                     message("Plotting chromatograms ...")
+                     peptideProfile() |> 
+                       rawrr:::plot.rawrrChromatogramSet() 
+                   }else{
+                     message("Plotting .missing() ...")
+                     .missing()
+                   }
                  })
-                 
+  
                  output$plotProfiles <- renderPlot({
                    
                    progress <- shiny::Progress$new(session = session)
