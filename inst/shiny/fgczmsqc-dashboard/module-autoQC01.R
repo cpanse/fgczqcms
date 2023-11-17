@@ -12,6 +12,10 @@ autoQC01UI <- function(id){
   v <- c("APEX", "AUC", "FWHM")
   
   tagList(
+    shinydashboard::box(fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
+                        title = "InstrumentEvents",
+                        footer = "once enabled it shows the instrument events.",
+                        width = 12),
     shinydashboard::box(
       fluidRow(
         column(9, offset = 0,tagList(
@@ -20,7 +24,7 @@ autoQC01UI <- function(id){
                      height = 600))),
         column(3, offset = 0,tagList(
           selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
-          selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = "AUC"),
+          selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC")),
           tableOutput(NS(id, "nearAuc")),
         )
         )
@@ -29,7 +33,6 @@ autoQC01UI <- function(id){
     fluidRow(rawrrUI(NS(id, "rawrr01"))),
     #verbatimTextOutput(NS(id, "dblclick_info")),
     fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
-    fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
     fluidRow(box(plotOutput(NS(id, "autoQC01Plot")), height = "55%", width = "100%"))
   )
 }
