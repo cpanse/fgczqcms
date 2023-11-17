@@ -634,9 +634,7 @@ function(input, output, session) {
  
   
   #### cometVariable ------------
- 
-  
-  
+
   output$cometVariable <- renderUI({
     
     defaulVariables <- c('nConfidentProteins', 'nConfidentPeptides', 'nMS2')

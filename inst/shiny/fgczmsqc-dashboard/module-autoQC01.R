@@ -18,8 +18,7 @@ autoQC01UI <- function(id){
     plotOutput(NS(id, "auc"),
                click = NS(id, "plot_click"),
                height = 600),
-    htmlOutput(NS(id, "nearChromatogram")),
-    #fluidRow(htmlOutput(NS(id, "nearChromatogram"))),
+    fluidRow(rawrrUI(NS(id, "rawrr01"))),
     #verbatimTextOutput(NS(id, "dblclick_info")),
     fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
     fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
@@ -38,6 +37,10 @@ autoQC01Server <- function(id, filterValues, BFabric){
   moduleServer(id,
                function(input, output, session) {
                  
+                 vals <- reactiveValues(fn = NULL, mZ = .iRTmz())
+
+                 rawrrServer("rawrr01", vals) #[names(.iRTmz()) %in% input$peptides])
+
                  ## autoQC01 ---------
                  autoQC01wide <- reactive({
                    progress <- shiny::Progress$new(session = session)
@@ -194,28 +197,21 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    message(paste0("plot_click: ", np$filename, collapse = " | "))
                    np
                  })
-                 
-                 output$nearChromatogram <- renderUI({
-                   req(input$plot_click)
+
+                 ## observeEvent =================
+                 observeEvent(input$plot_click, {
                    np <- nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
                    
                    message(paste0("plot_click: ", np$filename, collapse = " | "))
                    
                    config <- configServer("config2")
-                   fn <- file.path(config$rootdirraw, np$filename[1])
-                   
-                   if (file.exists(fn)){
-                     message(paste0(fn , " exists."))
-                     rawrrS <- rawrrServer("rawrr01", fn, .iRTmz()[names(.iRTmz()) %in% input$peptides])
-                     ## TODO(cp): make rawrrUI work
-                     #rawrrUI("rawrr01")
-                     renderPlot({rawrr:::plot.rawrrChromatogramSet(rawrrS())})
-                   }else{
-                     renderPlot({.missing()})
-                   }
+                   vals$fn <- file.path(config$rootdirraw, np$filename[1])
                  })
-                 
-                 ## -----------plot AUC | APEX | FWHM ggplot2::ggplot -----------------
+                 observeEvent(input$peptides, {
+                   vals$mZ <- .iRTmz()[names(.iRTmz()) %in% input$peptides]
+                 })
+
+                 ## ----------- ggplot2::ggplot -----------------
                  output$auc <- renderPlot({
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Plotting peptide data ...",

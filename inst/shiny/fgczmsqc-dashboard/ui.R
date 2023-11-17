@@ -44,7 +44,7 @@ dashboardPage(
       tabItem(tabName = "autoQC01Plots",
               fluidRow(h2("autoQC01 - Biognosys iRT peptides")),
               fluidRow(htmlOutput("autoQC01TimeSlider")), 
-              fluidRow(box(htmlOutput("autoQC01"), width = "100%")),
+              fluidRow(htmlOutput("autoQC01"), width = "100%"),
       ),
       tabItem(tabName = "diannplots",
               htmlOutput("diannVariable"),
