@@ -12,7 +12,7 @@ configServer <- function(id){
                  })
                  
                  rootdir <- reactive({
-                   cands <- c("/Users/cp/Downloads/dump/", "/scratch/DIAQC/qc/dump")
+                   cands <- c("/scratch/FGCZMSQC-DASHBOARD/", "/Users/cp/Downloads/dump/", "/scratch/DIAQC/qc/dump")
                    for (d in cands){
                      if (dir.exists(d))return(d)
                    }
