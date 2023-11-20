@@ -127,8 +127,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                    
                    if ("scanType" %in% names(dataFiltered())){
                      gp +
-                       ggplot2::geom_point(ggplot2::aes(time, value, colour = factor(scanType)), alpha = 0.4) +
-                       ggplot2::geom_line(ggplot2::aes(time, value, colour = factor(scanType)), alpha = 0.4) -> gp
+                       ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
+                       ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
                      
                    }else{
                      gp +

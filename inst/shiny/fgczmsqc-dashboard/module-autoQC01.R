@@ -9,12 +9,11 @@ autoQC01UI <- function(id){
          "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
          "LFLQFGAQGSPFLK")
   
-  v <- c("APEX", "AUC", "FWHM")
+  v <- c("APEX", "AUC", "AUC.lg2", "FWHM")
   
   tagList(
     shinydashboard::box(title = "InstrumentEvents",
                         fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
-                        
                         footer = "once enabled it shows the instrument events.",
                         status = "primary",
                         solidHeader = TRUE,
@@ -29,7 +28,7 @@ autoQC01UI <- function(id){
                           column(3, offset = 0,
                                  tagList(
                                    selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
-                                   selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC")),
+                                   selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC.lg2")),
                                    tableOutput(NS(id, "nearAuc")),
                                  )
                           )
@@ -93,6 +92,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                                                n = col_integer()),
                        trim_ws = TRUE)
                    
+                  
                    rv$Instrument <- NA
                    rv |> .assignInstrument(coln = 'filename')
                  })
@@ -177,6 +177,8 @@ autoQC01Server <- function(id, filterValues, BFabric){
                        col_types = readr::cols(time = col_datetime(format = "%s")),
                        trim_ws = TRUE) -> rv
                    
+                   rv$AUC.lg2 <- log(rv$AUC, 2)
+                   
                    ## TODO(cp): perform the ordering before!
                    progress$set(detail = "ordering ...", value = 2/5)                  
                    rv[order(rv$time), ] -> rv
@@ -209,8 +211,8 @@ autoQC01Server <- function(id, filterValues, BFabric){
                      reshape2::melt(id.vars = c("filename", "file.exists", "time", "Instrument", "peptide")) -> rv
                    
                    
-                   progress$set(detail = "log AUC", value = 3/3)
-                   rv$value[rv$variable == "AUC"] <- log(rv$value[rv$variable == "AUC"], 2) 
+                   #progress$set(detail = "log AUC", value = 3/3)
+                   #rv$value[rv$variable == "AUC"] <- log(rv$value[rv$variable == "AUC"], 2) 
                    
                    message(paste0("autoQC01 module APEX long nrow: ", nrow(rv)))
                    message(paste0(input$peptides, collapse = ', '))
