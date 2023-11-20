@@ -29,8 +29,13 @@ rawrrUI <- function(id){
              )
       ), title = "rawrr module",
       footer = "extracts and plots chromatographic profiles of a given m/z list by reading the Orbitrap raw file.",
-      collapsible = TRUE, width = 12)
+      collapsible = TRUE,
+      collapsed = FALSE,
+      status = "primary",
+      solidHeader = TRUE,
+      width = 12)
   )
+  
 }
 
 #' extracts and plots chromatographic profile of a given m/z list
@@ -48,15 +53,17 @@ rawrrServer <- function(id, vals){
                    message(paste0("fn has changed to ", vals$fn))
                  })
                  
-                 rawfile <- reactive({vals$fn})
+                 rawfile <- reactive({ vals$fn })
+                 
+                 
                  
                  peptideProfile <- reactive({
-                   shiny::req(rawfile())
-                   #shiny::req(rawfile(), input$ppmError, vals$mZ)
+                   #shiny::req(rawfile())
+                   shiny::req(rawfile(), input$ppmError, vals$mZ)
                    #shiny::req(vals$mZ)
                    
                    progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Reading mZ profiles ...")
+                   progress$set(message = "Reading mZ profiles ...", detail = 'using rawrr')
                    on.exit(progress$close())
                    
                    if (file.exists(rawfile())){
@@ -70,14 +77,12 @@ rawrrServer <- function(id, vals){
                      message(paste0("length = ", length(rv)))
                      return(rv)
                    }
-                   #  return(rv)
-                   #}else{
-                   #  return(NULL)
-                   #}
                  })
                  
                  output$plotChromatograms <- renderPlot({
-                   if (length(peptideProfile()) >0){
+                   shiny::req(peptideProfile())
+                   
+                   if (length(peptideProfile()) > 0){
                      progress <- shiny::Progress$new(session = session)
                      progress$set(message = "Plotting chromatograms ...")
                      on.exit(progress$close())

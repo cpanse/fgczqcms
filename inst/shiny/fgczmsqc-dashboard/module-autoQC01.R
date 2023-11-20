@@ -12,33 +12,44 @@ autoQC01UI <- function(id){
   v <- c("APEX", "AUC", "FWHM")
   
   tagList(
-    shinydashboard::box(fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
-                        title = "InstrumentEvents",
+    shinydashboard::box(title = "InstrumentEvents",
+                        fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
+                        
                         footer = "once enabled it shows the instrument events.",
                         status = "primary",
                         solidHeader = TRUE,
                         width = 12),
-    shinydashboard::box(
-      fluidRow(
-        column(9, offset = 0,tagList(
-          plotOutput(NS(id, "auc"),
-                     click = NS(id, "plot_click"),
-                     height = 600))),
-        column(3, offset = 0,tagList(
-          selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
-          selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC")),
-          tableOutput(NS(id, "nearAuc")),
-        )
-        )
-      ), footer = "click to analyze selected raw file below.",
-      status = "primary",
-      solidHeader = TRUE,
-      width = 12, title = "AUC | APEX | FWHM"),
-    fluidRow(rawrrUI(NS(id, "rawrr01"))),
-    #verbatimTextOutput(NS(id, "dblclick_info")),
-    fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
-    fluidRow(shinydashboard::box(plotOutput(NS(id, "autoQC01Plot")),  status = "primary",
-                                 solidHeader = TRUE, height = "55%", width = "100%"))
+    shinydashboard::box(title = "AUC | APEX | FWHM",
+                        fluidRow(
+                          column(9, offset = 0,
+                                 tagList(
+                                   plotOutput(NS(id, "auc"),
+                                              click = NS(id, "plot_click"),
+                                              height = 600))),
+                          column(3, offset = 0,
+                                 tagList(
+                                   selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
+                                   selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC")),
+                                   tableOutput(NS(id, "nearAuc")),
+                                 )
+                          )
+                        ), footer = "click to analyze selected raw file below.",
+                        status = "primary",
+                        solidHeader = TRUE,
+                        width = 12,
+    ),
+    htmlOutput(NS(id, "rawrrEnableUI")),
+    #rawrrUI(NS(id, "rawrr01")),
+    shinydashboard::box(title = "autoQC01 iRT peptide fit",
+                        fluidRow(
+                          column(3, offset = 0, htmlOutput(NS(id, "autoQC01Variable")))
+                        ),
+                        fluidRow(
+                          column(12, offset = 0, plotOutput(NS(id, "autoQC01Plot")))
+                        ),
+                        status = "primary",
+                        solidHeader = TRUE,
+                        width = 12)
   )
 }
 
@@ -53,10 +64,17 @@ autoQC01Server <- function(id, filterValues, BFabric){
   moduleServer(id,
                function(input, output, session) {
                  
-                 vals <- reactiveValues(fn = NULL, mZ = .iRTmz())
-
+                 vals <- reactiveValues(fn = NA, mZ = .iRTmz())
+                 
                  rawrrServer("rawrr01", vals) #[names(.iRTmz()) %in% input$peptides])
-
+                 
+                 output$rawrrEnableUI <- renderUI({
+                   shiny::req(vals$fn)
+                   if (file.exists(vals$fn)){
+                     rawrrUI(NS(id, "rawrr01"))
+                   }
+                 })
+                 
                  ## autoQC01 ---------
                  autoQC01wide <- reactive({
                    progress <- shiny::Progress$new(session = session)
@@ -108,7 +126,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    autoQC01Long()[autoQC01LongFilter, ]
                  })
                  
-                  
+                 
                  autoQC01Variables <- reactive({
                    autoQC01Long()$variable |> unique()
                  })
@@ -219,7 +237,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    message(paste0("plot_click: ", np$filename, collapse = " | "))
                    t(np[1,])
                  }, rownames = T, colnames = F)
-
+                 
                  ## observeEvent =================
                  observeEvent(input$plot_click, {
                    np <- nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
@@ -232,7 +250,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                  observeEvent(input$peptides, {
                    vals$mZ <- .iRTmz()[names(.iRTmz()) %in% input$peptides]
                  })
-
+                 
                  ## ----------- ggplot2::ggplot -----------------
                  output$auc <- renderPlot({
                    progress <- shiny::Progress$new(session = session)
@@ -249,7 +267,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    
                    if (filterValues$useBFabric){
                      gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time, linetype="dashed", 
-                                  color = "red", size = 1) -> gp
+                                              color = "red", size = 1) -> gp
                    }
                    
                    gp

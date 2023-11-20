@@ -3,7 +3,6 @@
 stopifnot(require(shinydashboard))
 
 source('module-bfabricInstrumentEvent.R')
-source('module-autoQC01.R')
 source('module-autoQC03.R')
 
 dashboardPage(
