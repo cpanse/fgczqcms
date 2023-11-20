@@ -15,6 +15,8 @@ autoQC01UI <- function(id){
     shinydashboard::box(fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
                         title = "InstrumentEvents",
                         footer = "once enabled it shows the instrument events.",
+                        status = "primary",
+                        solidHeader = TRUE,
                         width = 12),
     shinydashboard::box(
       fluidRow(
@@ -29,11 +31,14 @@ autoQC01UI <- function(id){
         )
         )
       ), footer = "click to analyze selected raw file below.",
+      status = "primary",
+      solidHeader = TRUE,
       width = 12, title = "AUC | APEX | FWHM"),
     fluidRow(rawrrUI(NS(id, "rawrr01"))),
     #verbatimTextOutput(NS(id, "dblclick_info")),
     fluidRow(htmlOutput(NS(id, "autoQC01Variable"))),
-    fluidRow(box(plotOutput(NS(id, "autoQC01Plot")), height = "55%", width = "100%"))
+    fluidRow(shinydashboard::box(plotOutput(NS(id, "autoQC01Plot")),  status = "primary",
+                                 solidHeader = TRUE, height = "55%", width = "100%"))
   )
 }
 
@@ -257,7 +262,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    }
                  })
                  
-                 #  return(data)
+                 return(autoQC01wide)
                }
   )
 }

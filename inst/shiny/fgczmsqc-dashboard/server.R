@@ -36,6 +36,8 @@ function(input, output, session) {
     NULL
   })
   
+  
+  ### initialize modules =============
   BFabric <- bfabricInstrumentEventServer("bfabric01", filterValues = vals)
   
   autoQC01 <- autoQC01Server("autoQC01", filterValues = vals, BFabric = BFabric)
@@ -91,30 +93,6 @@ function(input, output, session) {
                             filter = "ms")
   })
   
-  #### iRTprofileRawDIA --------------
-  iRTprofileRawDIA <- reactive({
-    shiny::req(input$file)
-    shiny::req(input$iRTpeptide)
-    shiny::req(input$scanType)
-    shiny::req(input$Ms2ppmError)
-    
-    progress <- shiny::Progress$new(session = session)
-    msg <- paste0("Reading Ms2 profiles for ", input$iRTpeptide, " ...")
-    progress$set(message = msg)
-    on.exit(progress$close())
-    
-    yIonSeries <- (input$iRTpeptide |> 
-      protViz::fragmentIon())[[1]]['y'] |>
-        unlist() 
-    
-    print(yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)])
-    
-    file.path(rootdirraw(), input$file) |>
-     rawrr::readChromatogram(mass = yIonSeries[seq(1, nchar(input$iRTpeptide) - 1)],
-                              tol = as.integer(input$Ms2ppmError),
-                              type = "xic",
-                              filter = input$scanType) 
-  })
   
   ####### instruments -----------
   instruments <- reactive({
@@ -304,26 +282,38 @@ function(input, output, session) {
   })
   
   
-  ## Summary ============
-  summaryData <- reactive({
-    #d1 <- data.frame(time = autoQC01wide()$time,
-    #                 size = autoQC01wide()$size,
-    #                 Instrument = autoQC01wide()$Instrument,
-    #                 method = "Biognosys iRT (autoQC01)")
+  ## Composing summary data ============
+  dataSummary <- reactive({
+    shiny::req(autoQC03DDA(), autoQC03DIA(), autoQC01())
     
-    d2 <- data.frame(time = cometWide()$time,
-                     size = cometWide()$size,
-                     Instrument = cometWide()$Instrument,
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = paste0("Composing summary data ..."))
+    on.exit(progress$close())
+    
+    d1 <- data.frame(time = autoQC01()$time,
+                     size = autoQC01()$size,
+                     Instrument = autoQC01()$Instrument,
+                     method = "Biognosys iRT (autoQC01)")
+
+    autoQC03DDA() |> 
+      subset(variable == "size") -> dd2
+    
+    d2 <- data.frame(time = dd2$time,
+                     size = dd2$value,
+                     Instrument = dd2$Instrument,
                      method = "DDA (comet)")
     
-    d3 <- data.frame(time = diannWide()$time,
-                     size = diannWide()$Size,
-                     Instrument = diannWide()$Instrument,
+    autoQC03DIA() |> 
+      subset(variable == "Size") -> dd3
+    
+    d3 <- data.frame(time = dd3$time,
+                     size = dd3$value,
+                     Instrument = dd3$Instrument,
                      method = "DIA (DIA-NN)")
+  
     
-    
-    (list(d2, d3) |>
-        Reduce(f = rbind))
+    list(d1, d2, d3) |>
+        Reduce(f = rbind)
   })
   
   superpose.symbol <- reactive({
@@ -338,13 +328,13 @@ function(input, output, session) {
   
   ## plotSummary --------
   output$plotSummary  <- renderPlot({
-    shiny::req(summaryData())
+    shiny::req(dataSummary())
    
     trellis.par.set("superpose.symbol", superpose.symbol())
     
     lattice::dotplot(Instrument ~ time | method,
                      groups = method,
-                     data = summaryData(),
+                     data = dataSummary(),
                      alpha = 0.2,
                      cex = 2.4,
                      pch = 22,
@@ -353,21 +343,19 @@ function(input, output, session) {
   })
   
   output$plotSummaryCumsum  <- renderPlot({
-    shiny::req(summaryData())
+    shiny::req(dataSummary())
     
     trellis.par.set("superpose.symbol", superpose.symbol())
     
-    
-    barchart(size/1024^3 ~ format(time, "%Y-%m") | method, data = summaryData(),
-             layout = c(1,3),
-             scales = list(x = list(rot=45)))
+    barchart(size/1024^3 ~ format(time, "%Y-%m") | method,
+             data = dataSummary(),
+             layout = c(1, 3),
+             scales = list(x = list(rot = 45)))
   })
-  
-
   
   ## printSummary --------
   output$summary <- renderPrint({
-    capture.output( table(summaryData()$method, summaryData()$Instrument))
+    capture.output( table(dataSummary()$method, dataSummary()$Instrument))
   })
 
   ## plot TICs --------

@@ -1,8 +1,8 @@
 #R
 
 bfabricInstrumentEventUI <- function(id){
-  fluidRow(box(plotOutput(NS(id, "plotSummaryBfabricEvents"),
-                          height = 600), width = "95%"))
+  ns <- NS(id)
+  htmlOutput(ns("ui"))
 }
 
 bfabricInstrumentEventServer <- function(id, filterValues){
@@ -81,22 +81,36 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    bfabricInstrumentEvents()[Filter, ]
                  })
                  
+                 
+                 output$ui <- renderUI({
+                   shinydashboard::box(plotOutput(NS(id, "plotSummaryBfabricEvents"),
+                                                  height = 600),
+                                       status = "primary",
+                                       solidHeader = TRUE,
+                                       collapsible = TRUE,
+                                       collapsed = !filterValues$useBFabric,
+                                       width = 12,
+                                       title = "Instrument events",
+                                       footer = "once enabled, graphs bfabric instrument events.")
+                 })
                  ## Plots ==================
                  output$plotSummaryBfabricEvents <- renderPlot({
-                   #shiny::req(input$useBfabric)
-                   shiny::req(bfabricInstrumentEvents())
-                   
-                   n <- length(unique(bfabricInstrumentEvents()$instrumentid))
-                   
-                   lattice::dotplot(~ time | InstrumentName,
-                                    group = InstrumentEventTypeName,
-                                    layout = c(1, n),
-                                    data = bfabricInstrumentEvents(),
-                                    cex = 1,
-                                    pch = 22,
-                                    auto.key = list(space = "right", pch=22),
-                                    main = 'B-Fabric instrument events grouped by event type',
-                   )
+                   if (filterValues$useBFabric){
+                     
+                     shiny::req(bfabricInstrumentEvents())
+                     
+                     n <- length(unique(bfabricInstrumentEvents()$instrumentid))
+                     
+                     lattice::dotplot(~ time | InstrumentName,
+                                      group = InstrumentEventTypeName,
+                                      layout = c(1, n),
+                                      data = bfabricInstrumentEvents(),
+                                      cex = 1,
+                                      pch = 22,
+                                      auto.key = list(space = "right", pch=22),
+                                      main = 'B-Fabric instrument events grouped by event type',
+                     )
+                   }else{NULL}
                  })
                  
                  

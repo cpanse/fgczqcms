@@ -1,33 +1,31 @@
 #R
-## 
-library(shinydashboard)
+## Christian Panse <cp@fgcz.ethz.ch> November 2023
+stopifnot(require(shinydashboard))
+
 source('module-bfabricInstrumentEvent.R')
+source('module-autoQC01.R')
 source('module-autoQC03.R')
+
 dashboardPage(
   dashboardHeader(title = "FGCZ MS QC"),
   dashboardSidebar(
     sidebarMenu(
-    
       menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line"),
                badgeLabel = "alpha", badgeColor = "fuchsia"),
-      menuItem("autoQC01", tabName = "autoQC01Plots", icon = icon("chart-line")),
-      #menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
-      #menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
+      menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line")),
       menuItem("Summary", tabName = "summary", icon = icon("table")),
       hr(),
-      #menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
-      #menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
       htmlOutput("useBfabric"),
-     selectInput('timeRange', 'time range in days',
-                 c(7, 14, 30, 60, 90, 180, 365, 2:10*365),
-                 multiple = FALSE,
-                 selected = 90),
+      selectInput('timeRange', 'time range in days',
+                  c(7, 14, 30, 60, 90, 180, 365, 2:10*365),
+                  multiple = FALSE,
+                  selected = 90),
       selectInput('regex', 'file regex',
                   c(".*", ".*raw$", ".*autoQC.*dia.*raw$", ".*autoQC.*dda.*raw$", "*.zip"),
                   multiple = FALSE,
                   selected = ".*raw$")
-      ),
+    ), # sidebarMenu
     br(),
     a(img(src="https://img.shields.io/badge/JIB-10.1515%2Fjib.2022.0031-brightgreen"),
       href='https://www.degruyter.com/document/doi/10.1515/jib-2022-0031/html'),
@@ -38,20 +36,18 @@ dashboardPage(
     br(),
     HTML("tested on"),
     img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px'),
-    sidebarMenu(menuItem("sessionInfo", tabName = "sessionInfo", icon = icon("laptop")))
-  ),
+    sidebarMenu(
+      menuItem("sessionInfo", tabName = "sessionInfo", icon = icon("laptop"))
+    )
+  ), # dashboardSidebar
   dashboardBody(
-    # Boxes need to be put in a row (or column)
     tabItems(
-      tabItem(tabName = "autoQC01Plots",
+      tabItem(tabName = "autoQC01",
               fluidRow(h2("autoQC01 - Biognosys iRT peptides")),
               fluidRow(htmlOutput("autoQC01TimeSlider")), 
+              # TODO(cp): can't we call the autoQC01 right from here?
+              # autoQC01UI("autoQC01")
               fluidRow(htmlOutput("autoQC01"), width = "100%"),
-      ),
-      tabItem(tabName = "diannplots",
-              htmlOutput("diannVariable"),
-              fluidRow(htmlOutput("diannTimeSlider")),
-              fluidRow(box(plotOutput("diannPlot"), height = "75%", width = "100%"))
       ),
       tabItem(tabName = "autoQC03",
               tagList(
@@ -60,14 +56,6 @@ dashboardPage(
                 autoQC03UI("autoQC03-DIA")
               )
       ),
-      tabItem(tabName = "cometplots",
-              fluidRow(h2("Identification using comet")),
-              fluidRow(htmlOutput("cometVariable")),
-              #fluidRow(htmlOutput("cometTimeSlider")),
-              fluidRow(htmlOutput("cometBfabricInstrumentEventsOutput")),
-              fluidRow(box(plotOutput("cometPlot"), width = "100%"))
-              
-      ),
       tabItem(tabName = "summary",
               fluidRow(
                 h2("Summary"),
@@ -75,31 +63,17 @@ dashboardPage(
                 fluidRow(box(verbatimTextOutput("summary"), width = 800)),
                 fluidRow(box(plotOutput("plotSummary", height = 600), width = "95%")),
                 fluidRow(box(plotOutput("plotSummaryCumsum", height = 250), width = "95%")),
-                fluidRow(box(bfabricInstrumentEventUI("bfabric01"), width = "100%")),
-              )
-      ),
-      tabItem(tabName = "rawFile",
-              tagList(
-            htmlOutput("fileInput", width = "100%"),
-            htmlOutput("fileOutput"))
-      ),
-      tabItem(tabName = "tic",
-              fluidRow(
-                h2("Total ion count"),
-                fluidRow(box(htmlOutput("ticFileInput"), width = "100%")),
-                fluidRow(
-                  box(plotOutput("plotTIC"), width = "100%")
-                )
+                fluidRow(bfabricInstrumentEventUI("bfabric01")),
               )
       ),
       tabItem(tabName = "sessionInfo",
               fluidRow(
                 h2("session information"),
                 fluidRow(
-                  box(verbatimTextOutput("sessionInfo"), width = 800)
+                  shinydashboard::box(verbatimTextOutput("sessionInfo"), width = 800)
                 )
               )
-      )
-    )
-  )
-)
+      ) # tabItem 
+    ) # tabItems
+  ) # dashboardBody
+) # dashboardPage

@@ -35,10 +35,11 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                  })
                  
                  output$variable <- renderUI({
-                   
-                   defaulVariablesIdx <-  dataVariables() %in% c('nConfidentProteins',
-                                                                 'nConfidentPeptides', 'nMS2', 'Precursors.Identified',
-                                                                 'Proteins.Identified', 'FWHM.RT')  |> which()
+                   dataVariables() %in% c('nConfidentProteins',
+                                          'nConfidentPeptides',
+                                          'nMS2', 'Precursors.Identified',
+                                          'Proteins.Identified', 'FWHM.RT') |> 
+                     which() -> defaulVariablesIdx 
                    
                    shinydashboard::box(
                      selectInput(ns('variables'), 'Variables',
@@ -54,7 +55,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                  })
                  
                  dataFiltered <- reactive({
-                   message(paste0("nrow data(): ", nrow(data())))
+                   #message(paste0("nrow data(): ", nrow(data())))
                    filter <- data()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < data()$time & data()$time < filterValues$timeMax 
                    #data()$variable %in% input$Variables 
@@ -63,26 +64,56 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                  })
                  
                  output$ui <- renderUI({
+                   tl <- tagList(
+                     htmlOutput(ns("variable")),
+                     shinydashboard::box(plotOutput(ns("plot")),status = "primary",
+                                         solidHeader = TRUE,
+                                         collapsible = FALSE,
+                                         width = 12)
+                   )
+                   
+                   if (filterValues$useBFabric){
+                     tl <- append(tl, tagList(htmlOutput(ns("instrumentEvents"))))
+                   }
+                   
                    tagList(
-                     h2(title),
-                     fluidRow(htmlOutput(ns("variable"))),
+                     #h2(title),
                      shinydashboard::box(
                        title = paste0(title, " plots"),
                        status = "primary",
                        solidHeader = TRUE,
                        collapsible = TRUE,
                        width = 12,
-                       plotOutput(ns("plot"))
+                       tl
                      ),
                    )
+
                  })
+                 
+                 output$instrumentEvents <- renderUI({
+                   #shiny::req(BFabric$bfabricInstrumentEventsFiltered())
+                   shinydashboard::box(
+                     title = "Instrument events",
+                     status = "primary",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     width = 12,
+                     tagList(
+                       DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
+                     ))
+
+                 })
+                 
                  
                  output$plot <- renderPlot({
                    shiny::req(dataFiltered())
                    
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = paste0("GG-plotting ", title, "data ..."))
+                   on.exit(progress$close())
                    
                    message(paste0("nrow dataFiltered(): ", nrow(dataFiltered())))
-                   dataFiltered() |> head() |> print()
+                   # dataFiltered() |> head() |> print()
                    
                    if (nrow(dataFiltered()) == 0){
                      .missing()
@@ -112,5 +143,6 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                    gp
                  })
                  
+                 return(data)
                })
 }
