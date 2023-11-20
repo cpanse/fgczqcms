@@ -2,18 +2,20 @@
 ## 
 library(shinydashboard)
 source('module-bfabricInstrumentEvent.R')
+source('module-autoQC03.R')
 dashboardPage(
   dashboardHeader(title = "FGCZ MS QC"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("autoQC01", tabName = "autoQC01Plots", icon = icon("chart-line")),
-      menuItem("DIA-NN stat", tabName = "diannplots", icon = icon("chart-line"),
+    
+      menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line"),
                badgeLabel = "alpha", badgeColor = "fuchsia"),
+      menuItem("autoQC01", tabName = "autoQC01Plots", icon = icon("chart-line")),
       #menuItem("DIA-NN stat data", tabName = "dianndata", icon = icon("table")),
-      menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
+      #menuItem("DDA-comet stat", tabName = "cometplots", icon = icon("chart-line")),
       menuItem("Summary", tabName = "summary", icon = icon("table")),
       hr(),
-      menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
+      #menuItem("raw file", tabName = "rawFile", icon = icon("chart-line")),
       menuItem("TIC", tabName = "tic", icon = icon("chart-line")),
       htmlOutput("instrument"),
       htmlOutput("useBfabric"),
@@ -51,17 +53,17 @@ dashboardPage(
               fluidRow(htmlOutput("diannTimeSlider")),
               fluidRow(box(plotOutput("diannPlot"), height = "75%", width = "100%"))
       ),
-      tabItem(tabName = "dianndata",
-              fluidRow(
-                h2("DIA-NN stat.tsv"),
-                DT::dataTableOutput('tableDIANN')
-                #htmlOutput("bfabricInstrumentEventsOutput")
+      tabItem(tabName = "autoQC03",
+              tagList(
+                htmlOutput("cometTimeSlider"),
+                autoQC03UI("autoQC03-DDA"),
+                autoQC03UI("autoQC03-DIA")
               )
       ),
       tabItem(tabName = "cometplots",
               fluidRow(h2("Identification using comet")),
               fluidRow(htmlOutput("cometVariable")),
-              fluidRow(htmlOutput("cometTimeSlider")),
+              #fluidRow(htmlOutput("cometTimeSlider")),
               fluidRow(htmlOutput("cometBfabricInstrumentEventsOutput")),
               fluidRow(box(plotOutput("cometPlot"), width = "100%"))
               

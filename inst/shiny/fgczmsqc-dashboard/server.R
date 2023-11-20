@@ -12,6 +12,7 @@ stopifnot(require(readr),
 source('helpers.R')
 source('module-config.R')
 source('module-autoQC01.R')
+source('module-autoQC03.R')
 source('module-bfabricInstrumentEvent.R')
 source('module-rawrr.R')
 
@@ -39,6 +40,15 @@ function(input, output, session) {
   
   autoQC01 <- autoQC01Server("autoQC01", filterValues = vals, BFabric = BFabric)
   
+  autoQC03DDA <- autoQC03Server("autoQC03-DDA", filterValues = vals,
+                                BFabric = BFabric,
+                                inputfile = file.path(rootdir(), "comet.RData"),
+                                readFUN = .readComet, title="DDA")
+  
+  autoQC03DIA <- autoQC03Server("autoQC03-DIA", filterValues = vals,
+                                BFabric = BFabric,
+                                inputfile = file.path(rootdir(), "output.txt"),
+                                readFUN = .readDIANN, title="DIA")
   
   output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")
@@ -351,29 +361,32 @@ function(input, output, session) {
     }
     
     shinydashboard::box(
-    sliderInput("autoQC01TimeRange", "Observation range:",
-                min = (now - (vals$timeRangeInSecs)),
-                max = now,
-                value = c(vals$timeMin, vals$timeMax),
-                timeFormat = "%F",
-                step = 3600 * 24,
-                width = "95%"), footer = "choose time range of autoQC01 files.", width = 12)
+      sliderInput("autoQC01TimeRange", "Observation range:",
+                  min = (now - (vals$timeRangeInSecs)),
+                  max = now,
+                  value = c(vals$timeMin, vals$timeMax),
+                  timeFormat = "%F",
+                  step = 3600 * 24,
+                  width = "95%"), footer = "choose time range of autoQC01 files.", width = 12)
   })
   
+  ## TODO(cp): rename to autoQC03TimeSlider
   output$cometTimeSlider <- renderUI({
     now <- Sys.time()
     
     if (vals$timeMin < (now - (vals$timeRangeInSecs))){
       vals$timeMin <- (now - (vals$timeRangeInSecs)) + 3600
     }
-       
-    sliderInput("cometTimeRange", "Observation range:", 
-                min = (now - (vals$timeRangeInSecs)),
-                max = now,
-                value = c(vals$timeMin, vals$timeMax),
-                timeFormat = "%F",
-                step = 3600 *24,
-                width = "95%")
+    
+    shinydashboard::box(
+      sliderInput("cometTimeRange", "Observation range:", 
+                  min = (now - (vals$timeRangeInSecs)),
+                  max = now,
+                  value = c(vals$timeMin, vals$timeMax),
+                  timeFormat = "%F",
+                  step = 3600 * 24,
+                  width = "95%"),
+      footer = "choose time range of autoQC03 data.", width = 12)
   })
   
 
