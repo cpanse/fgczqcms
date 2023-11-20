@@ -80,12 +80,15 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                  output$plot <- renderPlot({
                    shiny::req(dataFiltered())
                    
+                   
                    message(paste0("nrow dataFiltered(): ", nrow(dataFiltered())))
                    dataFiltered() |> head() |> print()
                    
-                   #lattice::xyplot(value ~ time | Instrument * variable,
-                   #                 subset = dataFiltered()$variable %in% input$variables,
-                   #                data = dataFiltered())
+                   if (nrow(dataFiltered()) == 0){
+                     .missing()
+                     return()
+                   }
+                   
                    dataFiltered() |> 
                      subset(variable %in% input$variables) |> 
                      ggplot2::ggplot(ggplot2::aes(time, value)) +
