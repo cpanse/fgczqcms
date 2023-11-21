@@ -160,7 +160,7 @@
     lines(x$xx, x$yp, col='red');
     segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
     abline(v = APEX, col = 'blue')
-    legend("topleft", paste0("sigma = ", round(x$sigma,3))
+    legend("topleft", paste0("sigma = ", sprintf("%.1e", x$sigma[1])), cex = 0.7, bty = 'n')
   }else{
     plot(x$times, x$intensities, main = paste0(x$mass), sub = 'fitting failed!')
   }
