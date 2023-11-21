@@ -60,7 +60,7 @@
 #' @param FWHM proposal
 #' @param x curve
 #'
-#' @return TRUE if at leas one point is in between the FWHM x-range.
+#' @return TRUE if at least one point is in between the FWHM x-range.
 .isPeak <- function(FWHM, x) {
   for (i.x in x){
     if (FWHM$x1 < i.x & i.x < (FWHM$x1 + FWHM$fwhm))
