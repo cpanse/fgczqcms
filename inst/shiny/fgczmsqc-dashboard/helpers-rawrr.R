@@ -103,7 +103,10 @@
   ## predict
   xx <- with(peak, seq(min(xc) - delta, max(xc) + delta, length = n))
   yp <- exp(predict(fit, data.frame(xc = xx)))
-  data.frame(xx = xx + x.mean, yp = yp, r.squared = summary(fit)$r.squared)
+  data.frame(xx = xx + x.mean,
+    yp = yp,
+    r.squared = summary(fit)$r.squared,
+    sigma = summary(fit)$sigma)
 }
 
 .fitPeak.rawrrChromatogram <- function (x, delta = 0.25, n = 200) 
@@ -114,6 +117,7 @@
     rv$xx <- fittedPeak$xx
     rv$yp <- fittedPeak$yp
     rv$r.squared <- fittedPeak$r.squared
+    rv$sigma <- fittedPeak$sigma
     rv
   })
 }
@@ -156,6 +160,7 @@
     lines(x$xx, x$yp, col='red');
     segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
     abline(v = APEX, col = 'blue')
+    legend("topleft", paste0("sigma = ", round(x$sigma,3))
   }else{
     plot(x$times, x$intensities, main = paste0(x$mass), sub = 'fitting failed!')
   }
