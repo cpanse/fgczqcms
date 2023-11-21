@@ -21,7 +21,6 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
-                 
                  data <- reactive({
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = paste0("Reading ", title, "data ..."))
@@ -33,7 +32,6 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                  dataVariables <- reactive({
                    data()$variable |> unique()
                  })
-                 
                  output$variable <- renderUI({
                    dataVariables() %in% c('nConfidentProteins',
                                           'nConfidentPeptides',
@@ -51,10 +49,9 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                      solidHeader = TRUE,
                      collapsible = FALSE,
                    )
-                   
                  })
-                 
                  dataFiltered <- reactive({
+                   shiny::req(data())
                    #message(paste0("nrow data(): ", nrow(data())))
                    filter <- data()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < data()$time & data()$time < filterValues$timeMax 
@@ -62,7 +59,6 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                    
                    data()[filter,]
                  })
-                 
                  output$ui <- renderUI({
                    tl <- tagList(
                      htmlOutput(ns("variable")),
@@ -71,11 +67,9 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                                          collapsible = FALSE,
                                          width = 12)
                    )
-                   
                    if (filterValues$useBFabric){
                      tl <- append(tl, tagList(htmlOutput(ns("instrumentEvents"))))
                    }
-                   
                    tagList(
                      #h2(title),
                      shinydashboard::box(
@@ -87,11 +81,12 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                        tl
                      ),
                    )
-
                  })
-                 
+                 ## render instrumentEvents
+                 ## TODO(cp): add module parameter when the table should be collapsed
                  output$instrumentEvents <- renderUI({
-                   #shiny::req(BFabric$bfabricInstrumentEventsFiltered())
+                   ## disable next line because it will start fetching data
+                   # shiny::req(BFabric$bfabricInstrumentEventsFiltered())
                    shinydashboard::box(
                      title = "Instrument events",
                      status = "primary",
@@ -101,48 +96,44 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                      tagList(
                        DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
                      ))
-
                  })
                  
-                 
                  output$plot <- renderPlot({
-                   shiny::req(dataFiltered())
-                   
+                   shiny::req(dataFiltered(), input$variables)
+
                    progress <- shiny::Progress$new(session = session)
-                   progress$set(message = paste0("GG-plotting ", title, "data ..."))
+                   progress$set(message = paste0("ggplotting ", title, "data ..."))
                    on.exit(progress$close())
-                   
+
                    message(paste0("nrow dataFiltered(): ", nrow(dataFiltered())))
-                   # dataFiltered() |> head() |> print()
-                   
+
                    if (nrow(dataFiltered()) == 0){
                      .missing()
                      return()
                    }
-                   
+
                    dataFiltered() |> 
                      subset(variable %in% input$variables) |> 
                      ggplot2::ggplot(ggplot2::aes(time, value)) +
                      ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)  -> gp
-                   
+
                    if ("scanType" %in% names(dataFiltered())){
                      gp +
                        ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
                        ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
-                     
+
                    }else{
                      gp +
                        ggplot2::geom_point(ggplot2::aes(time, value), alpha = 0.4) +
                        ggplot2::geom_line(ggplot2::aes(time, value), alpha = 0.4) -> gp
                    }
-                   
                    if (filterValues$useBFabric){
-                     gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time, linetype="dashed", 
+                     gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time,
+                                              linetype="dashed", 
                                               color = "red", size = 1) -> gp
                    }
                    gp
                  })
-                 
                  return(data)
                })
 }
