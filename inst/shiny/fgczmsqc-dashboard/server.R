@@ -386,9 +386,13 @@ function(input, output, session) {
   })
   
   #### render sessionInfo ----
+  output$consolenNodename <- renderPrint({
+    Sys.info()["nodename"] |>
+      as.character() |>
+      capture.output()
+  })
+  
   output$sessionInfo <- renderPrint({
-    (.getInstruments()[input$instrument] |> unlist() |> paste(collapse = ";") |> message())
-    
-    capture.output(sessionInfo())
+    sessionInfo() |> capture.output()
   })
 }

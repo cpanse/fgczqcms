@@ -8,29 +8,30 @@ bfabricInstrumentEventUI <- function(id){
 bfabricInstrumentEventServer <- function(id, filterValues){
   moduleServer(id,
                function(input, output, session) {
-                 ## Fetch bfabricInstrumentEventType
+                 ## Fetch bfabricInstrumentEventType ========
                  bfabricInstrumentEventTypeFetch <- reactive({
-                   # if (filterValues$useBfabric == FALSE) return (NULL)
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Fetching instrument event types ...")
                    on.exit(progress$close())
-                   
+                   ## TODO(cp): considering adding it as helper function
+                   ## to make it possible to test upfront
                    bfabricShiny::readPages(login,
                                            webservicepassword,
-                                           endpoint='instrumenteventtype',
-                                           query=list(),
-                                           posturl=bfabricposturl) |>
-                     lapply(function(x){data.frame(id=x$`_id`, name=x$name)}) |>
-                     Reduce(f = rbind)
+                                           endpoint = 'instrumenteventtype',
+                                           query = list(),
+                                           posturl = bfabricposturl) |>
+                     lapply(function(x){data.frame(id = x$`_id`, name=x$name)}) |>
+                     Reduce(f = rbind) -> rv
+                   
+                   rv
                  })
                  
                  ## Fetch bfabricInstrumentEvents  -------------
                  bfabricInstrumentFetch <- reactive({
-                   # if (filterValues$useBfabric == FALSE) return (NULL)
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Fetching instrument events ...")
                    on.exit(progress$close())
-                   
+
                    rv <- bfabricShiny::readPages(login,
                                                  webservicepassword,
                                                  endpoint = 'instrumentevent',
@@ -51,30 +52,25 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    
                    return(rv[order(rv$time), ])
                  })
-                 
+                 ## TODO(cp): give meaningful names
                  bfabricInstrumentEvents <- reactive({
-                   
-                   
                    S <- bfabricInstrumentFetch()
                    II <- .getInstruments()
                    IET <- bfabricInstrumentEventTypeFetch()
-                   
+
                    S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
                    S$InstrumentEventTypeName <- IET[match(S$instrumenteventtypeid, IET$id), 'name']
                    return(S)
-                   
                  })
                  
                  bfabricInstrumentEventsFiltered <- reactive({
                    shiny::req(bfabricInstrumentEvents())
-                   # shiny::req(input$instrument)
-                   
+
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Filter B-Fabric instrument events ...")
                    on.exit(progress$close())
-                   
-                   now <- Sys.time()
-                   
+
+
                    Filter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[filterValues$instrument] |> unlist() |> as.integer()) &
                      filterValues$timeMin <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < filterValues$timeMax
                    
@@ -96,11 +92,10 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                  ## Plots ==================
                  output$plotSummaryBfabricEvents <- renderPlot({
                    if (filterValues$useBFabric){
-                     
                      shiny::req(bfabricInstrumentEvents())
-                     
+
                      n <- length(unique(bfabricInstrumentEvents()$instrumentid))
-                     
+
                      lattice::dotplot(~ time | InstrumentName,
                                       group = InstrumentEventTypeName,
                                       layout = c(1, n),
@@ -112,9 +107,6 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                      )
                    }else{NULL}
                  })
-                 
-                 
-                 
                  return(list(bfabricInstrumentEvents = bfabricInstrumentEvents,
                              bfabricInstrumentEventsFiltered = bfabricInstrumentEventsFiltered))
                }

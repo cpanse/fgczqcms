@@ -69,7 +69,10 @@ dashboardPage(
               fluidRow(
                 h2("session information"),
                 fluidRow(
-                  shinydashboard::box(verbatimTextOutput("sessionInfo"), width = 800)
+                  shinydashboard::box(tagList(
+                    verbatimTextOutput("consolenNodename"),
+                    verbatimTextOutput("sessionInfo")
+                  ), width = 12)
                 )
               )
       ) # tabItem 
