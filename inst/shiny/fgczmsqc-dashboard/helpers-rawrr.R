@@ -14,24 +14,24 @@
   ## flip x axis
   m %*% diag(153)[,153:1] |> 
     image(asp = 1,axes = FALSE, useRaster = TRUE, col = cm.rgb)
- 
+  
   ## print colormap 
-#  points(x <- seq(0, 1, length = length(cm.rgb)),
-#         y <- rep(0, length(cm.rgb)),
-#         col = cm.rgb,
-#         pch=22)
+  #  points(x <- seq(0, 1, length = length(cm.rgb)),
+  #         y <- rep(0, length(cm.rgb)),
+  #         col = cm.rgb,
+  #         pch=22)
 }
 
 .rawrrChromatogramSet <- function (x, diagnostic = TRUE,
                                    xlim = range(unlist(lapply(x,
-                                       function(o) { o$times }))), ...) 
+                                                              function(o) { o$times }))), ...) 
 {
   stopifnot(attr(x, "class") == "rawrrChromatogramSet")
   if (attr(x, "type") == "xic") {
     plot(0, 0, type = "n", xlim = xlim,
          ylim = range(unlist(lapply(x, function(o) {
-                                                        o$intensities
-                                                      }))), frame.plot = FALSE, xlab = "Retention Time [min]", 
+           o$intensities
+         }))), frame.plot = FALSE, xlab = "Retention Time [min]", 
          ylab = "Intensities", ...)
     cm <- hcl.colors(length(x), "Set 2")
     mapply(function(o, co) {
@@ -52,7 +52,16 @@
   invisible(x)
 }
 
-.isFWHM<-function(FWHM, x) {
+#' When is a peak a peak?
+#'
+#' @description
+#' A super basic heuristic to descide if x describes a Gaussian peak.
+#' 
+#' @param FWHM proposal
+#' @param x curve
+#'
+#' @return TRUE if at leas one point is in between the FWHM x-range.
+.isPeak <- function(FWHM, x) {
   for (i.x in x){
     if (FWHM$x1 < i.x & i.x < (FWHM$x1 + FWHM$fwhm))
     {
@@ -125,4 +134,29 @@
     rv$intensities <- y$intensities[idx]
     rv
   })
+}
+
+.plotGaussianPeakProfile <- function(x){
+  AUC <- sum(diff(x$xx) * (head(x$yp, -1) + tail(x$yp,  -1))) / 2
+  APEX <- x$xx[which.max(x$yp)[1]]
+  # peptide <- names(vals$mZ)[which(x$mass == vals$mZ)]
+  # progress$set(detail = paste0("Render ", peptide), value = 4/5)
+  
+  FWHM <- .fwhm(x$xx, x$yp)
+  r.squared <- x$r.squared[1]
+  
+  if (.isPeak(FWHM, x$times)){
+    plot(x$times, x$intensities,
+         type='p',
+         sub = sprintf("AUC: %.1e | APEX: %.1f | FWHM: %.1e", AUC, APEX, FWHM$fwhm),
+         ylim = range(c(x$intensities, x$yp)),
+         xlim = range(APEX - 2 * FWHM$fwhm, APEX + 2 * FWHM$fwhm),
+         main = paste0(x$mass, collapse = " | "));
+    # legend("topleft", legend = c(sprintf("R^2: %.1e", r.squared)), cex = 0.5)
+    lines(x$xx, x$yp, col='red');
+    segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
+    abline(v = APEX, col = 'blue')
+  }else{
+    plot(x$times, x$intensities, main = paste0(x$mass), sub = 'fitting failed!')
+  }
 }

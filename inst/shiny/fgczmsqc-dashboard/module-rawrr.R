@@ -111,45 +111,19 @@ rawrrServer <- function(id, vals){
                        op <- par(mfrow = c(3, 4))
                      }else if (length(vals$mZ) > 4){
                        op <- par(mfrow = c(3, 3))
+                     }else if (length(vals$mZ) == 3){
+                       op <- par(mfrow = c(2, 2))
+                       .rawrr_logo()
                      }else if (length(vals$mZ) > 2){
                        op <- par(mfrow = c(2, 2))
                      }else{
                        op <- par(mfrow = c(1, length(vals$mZ)))
                      }
-                     
-                     
-                     ## TODO(cp): put that into the helper file
+
                      peptideProfile() |>
                        .pickPeak.rawrrChromatogram() |>
                        .fitPeak.rawrrChromatogram(delta = 0.5, n = 200) |>
-                       lapply(function(x){
-                         AUC <- sum(diff(x$xx) * (head(x$yp, -1) + tail(x$yp,  -1))) / 2
-                         APEX <- x$xx[which.max(x$yp)[1]]
-                         peptide <- names(vals$mZ)[which(x$mass == vals$mZ)]
-                         progress$set(detail = paste0("Render ", peptide), value = 4/5)
-                         
-                         FWHM <- .fwhm(x$xx, x$yp)
-                         r.squared <- x$r.squared[1]
-                         #df <- data.frame(filename = file, time = time, peptide = peptide, auc = NA, apex = NA, FWHM = NA)
-                         
-                         if (.isFWHM(FWHM, x$times)){
-                           plot(x$times, x$intensities,
-                                type='p',
-                                sub = sprintf("AUC: %.1e | APEX: %.1f | FWHM: %.1e", AUC, APEX, FWHM$fwhm),
-                                ylim = range(c(x$intensities, x$yp)),
-                                xlim = range(APEX - 2 * FWHM$fwhm, APEX + 2 * FWHM$fwhm),
-                                main = paste0(peptide, x$mass, collapse = " | "));
-                           # legend("topleft", legend = c(sprintf("R^2: %.1e", r.squared)), cex = 0.5)
-                           lines(x$xx, x$yp, col='red');
-                           segments(FWHM$x1, FWHM$y1, FWHM$x1 + FWHM$fwhm, FWHM$y1, col = 'green')
-                           abline(v = APEX, col = 'blue')
-                           
-                           #msg <- paste0(file, peptide, AUC, APEX, FWHM$fwhm, sep='\t|\t')
-                           #df <- data.frame(filename = file, time = time, peptide=peptide, auc=AUC, apex=APEX, FWHM=FWHM$fwhm)
-                         }else{
-                           plot(x$times, x$intensities, main = paste(peptide, x$mass), sub = 'fitting failed!')
-                         }
-                       }) # lapply
+                       lapply(FUN = .plotGaussianPeakProfile)
                    }else{
                      .missing()
                    }
