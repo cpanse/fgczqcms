@@ -49,7 +49,7 @@ function(input, output, session) {
   
   autoQC03DIA <- autoQC03Server("autoQC03-DIA", filterValues = vals,
                                 BFabric = BFabric,
-                                inputfile = file.path(rootdir(), "output.txt"),
+                                inputfile = file.path(rootdir(), "autoQC03-diann.txt"),
                                 readFUN = .readDIANN, title="DIA")
   
   output$autoQC01 <- renderUI({
