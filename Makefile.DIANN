@@ -51,6 +51,16 @@ unzip:
 
 
 
+dump/autoQC03-diann.input.txt: /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt
+	cat $< \
+	  | egrep "autoQC03dia.*raw$$" \
+	  | tee $@ \
+	  | awk -F ";" '{print $$NF}' \
+	  | rsync -av --files-from="-" /srv/www/htdocs/ ./dump
+
+stageinput: dump/autoQC03-diann.input.txt
+
+
 
 statistics:
 	@sort -t';' -k4 ../input.txt  > ../input.txt.s
@@ -59,6 +69,13 @@ statistics:
 	| sort -k3 -g -t';'
 
 stat: statistics
+dump/autoQC03-diann.txt:
+	@sort -t';' -k4 ../input.txt  > ../input.txt.s
+	(find . -type f -name "diaqc_report.stats.tsv" | head -n 1| parallel head -n 1 | tr "\t" ";" | sed 's/File.Name;/File.Name;Md5;Time;Size;/'; \
+	find . -type f -name "diaqc_report.stats.tsv" -exec tail -n 1 {} \; | sed -e 's/dump\///' -e 's/\.mzML/\.raw/' | tr "\t" ";" | sort | join -t";" -1 4 -2 1 ../input.txt.s -) \
+	| sort -k3 -g -t';' >$@
+
+output: dump/autoQC03-diann.txt
 
 .mzML.diann:
 	mkdir -p $@ $(DIANNTEMP) && nice -19 $(DIANN) $(DIANNDEFAULTS) --f $< $(DIANNFASTA) --temp $< --temp $(DIANNTEMP) --out $@/diaqc_report.tsv || mv $@ $@.$(NOW).broken
