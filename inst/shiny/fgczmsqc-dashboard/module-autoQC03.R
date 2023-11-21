@@ -17,7 +17,7 @@ autoQC03UI <- function(id){
 #'
 #' @param id 
 #' @param filterValues time and instrument information
-autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title){
+autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title, footer){
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
@@ -74,6 +74,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title)
                      #h2(title),
                      shinydashboard::box(
                        title = paste0(title, " plots"),
+                       footer = footer,
                        status = "primary",
                        solidHeader = TRUE,
                        collapsible = TRUE,
