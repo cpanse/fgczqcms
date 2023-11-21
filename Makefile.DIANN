@@ -5,11 +5,8 @@
 ## 2023-10-23 
 ## 
 ## usage:
-##   # for timsTOF 
-##   make stageinput && make unzip && make diann && stageoutput
-##
 ##   # for Orbitrap
-##   make stageinput && make convert && make diann && stageoutput
+##   make -f Makefile.DIANN stageinput && make -f Makefile.DIANN convert && make -f Makefile.DIANN diann && make -f Makefile.DIANN output
 
 SHELL=/bin/bash
 
@@ -62,15 +59,17 @@ stageinput: dump/autoQC03-diann.input.txt
 
 
 
-statistics:
-	@sort -t';' -k4 ../input.txt  > ../input.txt.s
+### TODO
+statistics: dump/autoQC03-diann.input.txt
+	sort -t';' -k4 $< > ../input.txt.s
 	(find . -type f -name "diaqc_report.stats.tsv" | head -n 1| parallel head -n 1 | tr "\t" ";" | sed 's/File.Name;/File.Name;Md5;Time;Size;/'; \
 	find . -type f -name "diaqc_report.stats.tsv" -exec tail -n 1 {} \; | sed -e 's/dump\///' -e 's/\.mzML/\.raw/' | tr "\t" ";" | sort | join -t";" -1 4 -2 1 ../input.txt.s -) \
-	| sort -k3 -g -t';'
+	| sort -k3 -g -t';' | cat -n
 
 stat: statistics
-dump/autoQC03-diann.txt:
-	@sort -t';' -k4 ../input.txt  > ../input.txt.s
+
+dump/autoQC03-diann.txt: dump/autoQC03-diann.input.txt
+	@sort -t';' -k4 $<  > ../input.txt.s
 	(find . -type f -name "diaqc_report.stats.tsv" | head -n 1| parallel head -n 1 | tr "\t" ";" | sed 's/File.Name;/File.Name;Md5;Time;Size;/'; \
 	find . -type f -name "diaqc_report.stats.tsv" -exec tail -n 1 {} \; | sed -e 's/dump\///' -e 's/\.mzML/\.raw/' | tr "\t" ";" | sort | join -t";" -1 4 -2 1 ../input.txt.s -) \
 	| sort -k3 -g -t';' >$@

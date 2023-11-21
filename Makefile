@@ -1,1 +1,1 @@
-Makefile.DIANN
+Makefile.autoQC01
