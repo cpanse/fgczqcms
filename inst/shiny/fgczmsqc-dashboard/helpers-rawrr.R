@@ -1,5 +1,27 @@
 #R
 
+.rawrr_logo <- function(){
+  ## compose colormap
+  'graphics/rawrr_logo-colormap.rgb' |>
+    read.csv(header = TRUE, sep = ' ') -> cm
+  
+  rgb(cm$red, cm$green, cm$blue, alpha = 1) -> cm.rgb
+  
+  ## cast to matrix
+  scan('graphics/rawrr_logo144x153.txt') |>
+    matrix(144, 153) -> m
+  
+  ## flip x axis
+  m %*% diag(153)[,153:1] |> 
+    image(asp = 1,axes = FALSE, useRaster = TRUE, col = cm.rgb)
+ 
+  ## print colormap 
+#  points(x <- seq(0, 1, length = length(cm.rgb)),
+#         y <- rep(0, length(cm.rgb)),
+#         col = cm.rgb,
+#         pch=22)
+}
+
 .rawrrChromatogramSet <- function (x, diagnostic = TRUE,
                                    xlim = range(unlist(lapply(x,
                                        function(o) { o$times }))), ...) 
