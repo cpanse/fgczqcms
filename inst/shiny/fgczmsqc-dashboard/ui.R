@@ -5,7 +5,7 @@ stopifnot(require(shinydashboard))
 source('module-bfabricInstrumentEvent.R')
 source('module-autoQC03.R')
 
-imgBanner <- "/Users/cp/src/gitlab.bfabric.org/proteomics/qc/inst/shiny/fgczmsqc-dashboard/graphics/fgcz-header-background.png"
+imgBanner <- "graphics/fgcz-header-background.png"
 stopifnot(file.exists(imgBanner))
 
 tl <- tagList(
@@ -49,7 +49,7 @@ dashboardPage(
     HTML("tested on"),
     img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px'),
     sidebarMenu(
-      menuItem("sessionInfo", tabName = "sessionInfo", icon = icon("laptop"))
+      menuItem("session | debug", tabName = "sessionInfo", icon = icon("laptop"))
     )
   ), # dashboardSidebar
   dashboardBody(
@@ -96,11 +96,10 @@ dashboardPage(
       ),
       tabItem(tabName = "sessionInfo",
               fluidRow(
-                h2("Session information"),
+                h2("Session | debug - information"),
                 fluidRow(
                   shinydashboard::box(tagList(
-                    verbatimTextOutput("console", placeholder = TRUE),
-                    verbatimTextOutput("sessionInfo")
+                    verbatimTextOutput("console", placeholder = TRUE)
                   ), width = 12)
                 )
               )
