@@ -27,7 +27,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                  })
                  
                  ## Fetch bfabricInstrumentEvents  -------------
-                 bfabricInstrumentFetch <- reactive({
+                 bfabricInstrumentEventFetch <- reactive({
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Fetching instrument events ...")
                    on.exit(progress$close())
@@ -54,7 +54,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                  })
                  ## TODO(cp): give meaningful names
                  bfabricInstrumentEvents <- reactive({
-                   S <- bfabricInstrumentFetch()
+                   S <- bfabricInstrumentEventFetch()
                    II <- .getInstruments()
                    IET <- bfabricInstrumentEventTypeFetch()
 
