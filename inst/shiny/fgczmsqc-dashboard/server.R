@@ -391,10 +391,20 @@ function(input, output, session) {
   })
   
   #### render sessionInfo ----
-  output$consolenNodename <- renderPrint({
-    Sys.info()["nodename"] |>
-      as.character() |>
-      capture.output()
+  output$console <- renderPrint({
+    console <- function(){
+      list(
+        histname <- Sys.info()["nodename"] |>
+          as.character() |>
+          capture.output(),
+        autoQC01Tail <- autoQC01() |>
+          tail(),
+        autoQC03DDATail <- autoQC03DDA() |>
+          tail()
+      )
+    }
+    
+    console()
   })
   
   output$sessionInfo <- renderPrint({

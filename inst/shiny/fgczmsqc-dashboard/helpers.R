@@ -192,6 +192,7 @@
   
   colnames(S)[colnames(S) == "Time"] <- "time"
   
+  #idx <- order(S$time)
   S$Instrument <- NA
   S |>
     .assignInstrument() |>
@@ -228,6 +229,7 @@
           'fdrProtein',  'size',   'nMS2', 'TIC')
   e$comet$time <- as.POSIXct(e$comet$time )
   
+  #idx <- order(e$comet$time)
   e$comet[, cc]  |>
     reshape2::melt(id.vars = c("Md5", "File.Name", "time", "Instrument", "scanType")) 
 }
