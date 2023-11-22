@@ -93,9 +93,9 @@ function(input, output, session) {
     
     file.path(rootdirraw(), input$file) |>
       rawrr::readChromatogram(mass = iRTmz(),
-                            tol = as.integer(input$Ms1ppmError),
-                            type = "xic",
-                            filter = "ms")
+                              tol = as.integer(input$Ms1ppmError),
+                              type = "xic",
+                              filter = "ms")
   })
   
   
@@ -104,7 +104,7 @@ function(input, output, session) {
     names(.getInstruments())
   })
   
-
+  
   rootdirraw <- reactive({
     cands <- c("/srv/www/htdocs/", "/scratch/DIAQC/qc/dump", "/Users/cp/Downloads/dump/")
     for (d in cands){
@@ -136,7 +136,7 @@ function(input, output, session) {
   observeEvent({ input$useBfabric }, {
     vals$useBFabric <- input$useBfabric
   })
-
+  
   observeEvent({ input$instrument }, {
     vals$instrument <- input$instrument
   })
@@ -150,7 +150,7 @@ function(input, output, session) {
       if (vals$timeMin > Sys.time() - 21*24*3600){
         vals$timeMin <- Sys.time() - 21*24*3600
       }
-     
+      
       if (vals$timeMax < Sys.time()){
         vals$timeMax <- Sys.time()
       }
@@ -186,7 +186,7 @@ function(input, output, session) {
   })
   
   observeEvent({input$autoQC01TimeRange}, {
-   # shiny::req(input$autoQC01TimeRange)
+    # shiny::req(input$autoQC01TimeRange)
     
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
     
@@ -235,14 +235,14 @@ function(input, output, session) {
       footer = "choose time range of autoQC03 data.", width = 12)
   })
   
-
+  
   output$diannTimeSlider <- renderUI({
     mintime <- min(diannLong()$time)
     now <- Sys.time()
     
     maxtime <- (1 + difftime(now, mintime, units = 'days') |>
-              round() |>
-              as.integer())
+                  round() |>
+                  as.integer())
     
     sliderInput("diannDays", "Observation range in days:", min = 0,
                 max = maxtime,
@@ -252,16 +252,16 @@ function(input, output, session) {
   
   output$instrument <- renderUI({
     fluidRow(selectInput('instrument', 'Instruments',
-                              instruments(),
-                              multiple = FALSE,
-                              selected = instruments()[1]))
+                         instruments(),
+                         multiple = FALSE,
+                         selected = instruments()[1]))
   })
   
   output$useBfabric <- renderUI({
     if (require(bfabricShiny)){
       L <- fluidRow(checkboxInput('useBfabric',
-                                 'show B-Fabric Instrument Events',
-                                 value = FALSE))
+                                  'show B-Fabric Instrument Events',
+                                  value = FALSE))
       return(L)
     }
     NULL
@@ -299,7 +299,7 @@ function(input, output, session) {
                      size = autoQC01()$size,
                      Instrument = autoQC01()$Instrument,
                      method = "Biognosys iRT (autoQC01)")
-
+    
     autoQC03DDA() |> 
       subset(variable == "size") -> dd2
     
@@ -315,10 +315,10 @@ function(input, output, session) {
                      size = dd3$value,
                      Instrument = dd3$Instrument,
                      method = "DIA (DIA-NN)")
-  
+    
     
     list(d1, d2, d3) |>
-        Reduce(f = rbind)
+      Reduce(f = rbind)
   })
   
   superpose.symbol <- reactive({
@@ -362,7 +362,7 @@ function(input, output, session) {
   output$summary <- renderPrint({
     capture.output( table(dataSummary()$method, dataSummary()$Instrument))
   })
-
+  
   ## plot TICs --------
   output$plotTIC <- renderPlot({
     shiny::req(ticData())
@@ -375,7 +375,7 @@ function(input, output, session) {
     
     ticData() |> lapply(function(x){plot(x)})
   }, height = function(){300 * length(input$ticfile)})
-
+  
   #### render rawFileHeader  ----
   output$rawFileHeader <- renderPrint({
     shiny::req(rawFileHeader())
@@ -394,13 +394,17 @@ function(input, output, session) {
   output$console <- renderPrint({
     console <- function(){
       list(
-        histname <- Sys.info()["nodename"] |>
+        hostname = Sys.info()["nodename"] |>
           as.character() |>
           capture.output(),
-        autoQC01Tail <- autoQC01() |>
+        autoQC01Tail = autoQC01() |>
           tail(),
-        autoQC03DDATail <- autoQC03DDA() |>
-          tail()
+        autoQC03DDATail = autoQC03DDA() |>
+          tail(),
+        autoQC03DIATail = autoQC03DIA() |>
+          tail(),
+        sessionInfo=sessionInfo(),
+        Sys.getenv=Sys.getenv()
       )
     }
     
