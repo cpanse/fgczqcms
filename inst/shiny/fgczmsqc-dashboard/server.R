@@ -40,7 +40,8 @@ function(input, output, session) {
   ### initialize modules =============
   BFabric <- bfabricInstrumentEventServer("bfabric01", filterValues = vals)
   
-  autoQC01 <- autoQC01Server("autoQC01", filterValues = vals, BFabric = BFabric)
+  autoQC01 <- autoQC01Server("autoQC01", filterValues = vals, BFabric = BFabric,
+                             inputfile = file.path(rootdir(), 'autoQC01-fit-apex-auc-fwhm.txt'))
   
   autoQC03DDA <- autoQC03Server("autoQC03-DDA", filterValues = vals,
                                 BFabric = BFabric,

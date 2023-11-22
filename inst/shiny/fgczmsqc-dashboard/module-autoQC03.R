@@ -81,9 +81,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      tl <- append(tl, tagList(htmlOutput(ns("instrumentEvents"))))
                    }
                    tagList(
-                     #h2(title),
                      shinydashboard::box(
-                       title = paste0(title, " plots - mtime ", file.mtime(inputfile)),
+                       title = paste0(title, " plots - mtime: ", file.mtime(inputfile) |> strftime("%a %F %T")),
                        footer = footer,
                        status = status(),
                        solidHeader = TRUE,

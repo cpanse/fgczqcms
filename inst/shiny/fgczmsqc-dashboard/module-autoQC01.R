@@ -4,13 +4,7 @@
 autoQC01UI <- function(id){
   ns <- NS(id)
   
-  p <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
-         "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
-         "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
-         "LFLQFGAQGSPFLK")
-  
-  v <- c("APEX", "AUC", "AUC.lg2", "FWHM")
-  
+ 
   tagList(
     shinydashboard::box(title = "InstrumentEvents",
                         fluidRow(htmlOutput(ns("instrumentEventsOutput"))),
@@ -19,26 +13,7 @@ autoQC01UI <- function(id){
                         solidHeader = TRUE,
                         width = 12),
     # TODO(cp): make that reactive and enable status mtime.
-    shinydashboard::box(title = "AUC | APEX | FWHM",
-                        fluidRow(
-                          column(9, offset = 0,
-                                 tagList(
-                                   plotOutput(NS(id, "auc"),
-                                              click = NS(id, "plot_click"),
-                                              height = 600))),
-                          column(3, offset = 0,
-                                 tagList(
-                                   selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
-                                   selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC.lg2")),
-                                   tableOutput(NS(id, "nearAuc")),
-                                   #sliderInput(ns('AUC.lg2.cutoff'), "AUC.lg2.cutoff", min = 9, max = 40, value = c(10, 40) , step = 1),
-                                 )
-                          )
-                        ), footer = "click to analyze selected raw file below.",
-                        status = "primary",
-                        solidHeader = TRUE,
-                        width = 12,
-    ),
+    htmlOutput(NS(id, "AucApexFwhmUI")),
     htmlOutput(NS(id, "rawrrEnableUI")),
     #rawrrUI(NS(id, "rawrr01")),
     shinydashboard::box(title = "autoQC01 iRT peptide fit",
@@ -61,13 +36,52 @@ autoQC01UI <- function(id){
 #'
 #' @return data.frame 
 #' @export
-autoQC01Server <- function(id, filterValues, BFabric){
+autoQC01Server <- function(id, filterValues, BFabric, inputfile){
   moduleServer(id,
                function(input, output, session) {
-                 
+                 ns <- NS(id)
                  vals <- reactiveValues(fn = NA, mZ = .iRTmz())
                  
                  rawrrServer("rawrr01", vals) #[names(.iRTmz()) %in% input$peptides])
+                 
+                 output$AucApexFwhmUI <- renderUI({
+                   p <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
+                          "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
+                          "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
+                          "LFLQFGAQGSPFLK")
+                   
+                   v <- c("APEX", "AUC", "AUC.lg2", "FWHM")
+                   
+                   status <- function(){
+                     if (difftime(Sys.time(), file.mtime(inputfile),  unit='hour') > 12){
+                       "danger"
+                     }else{
+                       "primary"
+                     }
+                   }
+                   
+                   shinydashboard::box(title = paste0("AUC | APEX | FWHM  plots - mtime: ",
+                                                      file.mtime(inputfile) |> strftime("%a %F %T")),
+                     fluidRow(
+                       column(9, offset = 0,
+                              tagList(
+                                plotOutput(NS(id, "auc"),
+                                           click = NS(id, "plot_click"),
+                                           height = 600))),
+                       column(3, offset = 0,
+                              tagList(
+                                selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
+                                selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC.lg2")),
+                                tableOutput(NS(id, "nearAuc")),
+                                #sliderInput(ns('AUC.lg2.cutoff'), "AUC.lg2.cutoff", min = 9, max = 40, value = c(10, 40) , step = 1),
+                              )
+                       )
+                     ), footer = "click to analyze selected raw file below.",
+                     status = status(),
+                     solidHeader = TRUE,
+                     width = 12
+                   )
+                 })
                  
                  output$rawrrEnableUI <- renderUI({
                    shiny::req(vals$fn)
@@ -94,7 +108,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                                                n = col_integer()),
                        trim_ws = TRUE)
                    
-                  
+                   
                    rv$Instrument <- NA
                    rv |> .assignInstrument(coln = 'filename')
                  })
@@ -109,7 +123,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                    
                    autoQC01wideFilter <- autoQC01wide()$Instrument %in% filterValues$instrument & 
                      filterValues$timeMin < autoQC01wide()$time & autoQC01wide()$time < filterValues$timeMax  
-                    
+                   
                    
                    rv <- autoQC01wide()[autoQC01wideFilter, ] |>
                      reshape2::melt(id.vars = c("md5", "filename", "time", "Instrument"))
@@ -163,16 +177,12 @@ autoQC01Server <- function(id, filterValues, BFabric){
                  
                  ## data AUC|APEX|FWHM ==================
                  autoQC01APEXwide <- reactive({
-                   fn <- "autoQC01-fit-apex-auc-fwhm.txt"
                    progress <- shiny::Progress$new(session = session)
-                   msg <- paste0("Reading ", fn)
+                   msg <- paste0("Reading ", inputfile |> basename(), " ...")
                    progress$set(message = msg, detail = "APEX | AUC | FWHM", value = 1/5)
                    on.exit(progress$close())
                    
-                   config <- configServer("config1")
-                   
-                   config$rootdir |>
-                     file.path(fn) |>
+                   inputfile |>
                      readr::read_delim(
                        delim = ";",
                        escape_double = FALSE,           
@@ -198,7 +208,7 @@ autoQC01Server <- function(id, filterValues, BFabric){
                  
                  data <- reactive({
                    shiny::req(autoQC01APEXwide(), input$peptides)
-
+                   
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Reshaping autoQC01", detail = "Filtering", value = 1/3)
                    on.exit(progress$close())
@@ -209,11 +219,11 @@ autoQC01Server <- function(id, filterValues, BFabric){
                      autoQC01APEXwide()$peptide %in% input$peptides 
                    
                    #&
-                  #   as.integer(input$AUC.lg2.cutoff[1]) <= autoQC01APEXwide()$AUC.lg2 &
+                   #   as.integer(input$AUC.lg2.cutoff[1]) <= autoQC01APEXwide()$AUC.lg2 &
                    #  autoQC01APEXwide()$AUC.lg2 <= as.integer(input$AUC.lg2.cutoff[2])
-                     
                    
-                     
+                   
+                   
                    progress$set(detail = "reshape2::melt", value = 2/3)
                    autoQC01APEXwide()[autoQC01APEXFilter, ] |>
                      reshape2::melt(id.vars = c("filename", "file.exists", "time", "Instrument", "peptide")) -> rv
