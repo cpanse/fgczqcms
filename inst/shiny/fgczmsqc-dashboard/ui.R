@@ -42,7 +42,7 @@ dashboardPage(
   dashboardBody(
     tabItems(
       tabItem(tabName = "autoQC01",
-              fluidRow(h2("autoQC01 - Biognosys iRT peptides")),
+              fluidRow(h2("autoQC01 - Biognosys iRT peptides runs")),
               fluidRow(htmlOutput("autoQC01TimeSlider")), 
               # TODO(cp): can't we call the autoQC01 right from here?
               # autoQC01UI("autoQC01")
@@ -50,6 +50,7 @@ dashboardPage(
       ),
       tabItem(tabName = "autoQC03",
               tagList(
+                fluidRow(h2("autoQC03 - runs")),
                 htmlOutput("cometTimeSlider"),
                 autoQC03UI("autoQC03-DDA"),
                 autoQC03UI("autoQC03-DIA")
@@ -58,16 +59,25 @@ dashboardPage(
       tabItem(tabName = "summary",
               fluidRow(
                 h2("Summary"),
-                HTML("MS QC event frequency in numbers and graphics"),
-                fluidRow(box(verbatimTextOutput("summary"), width = 800)),
-                fluidRow(box(plotOutput("plotSummary", height = 600), width = "95%")),
-                fluidRow(box(plotOutput("plotSummaryCumsum", height = 250), width = "95%")),
-                fluidRow(bfabricInstrumentEventUI("bfabric01")),
+                shinydashboard::box(title = "Frequency of MS QC events",
+                                    verbatimTextOutput("summary"),
+                                    solidHeader = TRUE,
+                                    collapsible = TRUE,
+                                    status = "primary",
+                                    width = 12,
+                                    footer = "MS QC event frequency in numbers and graphics"),
+                htmlOutput("plotSummaryLCMSruns"),
+                shinydashboard::box(plotOutput("plotSummaryCumsum", height = 250),
+                                             width = 12,
+                                             status = "primary",
+                                             solidHeader = TRUE,
+                                             collapsible = TRUE,),
+                bfabricInstrumentEventUI("bfabric01"),
               )
       ),
       tabItem(tabName = "sessionInfo",
               fluidRow(
-                h2("session information"),
+                h2("Session information"),
                 fluidRow(
                   shinydashboard::box(tagList(
                     verbatimTextOutput("consolenNodename"),

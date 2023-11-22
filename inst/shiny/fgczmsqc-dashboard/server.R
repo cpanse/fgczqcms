@@ -330,20 +330,27 @@ function(input, output, session) {
     return(t)
   })
   
-  ## plotSummary --------
-  output$plotSummary  <- renderPlot({
+  ## plotSummaryLCMSruns  --------
+  output$plotSummaryLCMSruns  <- renderUI({
     shiny::req(dataSummary())
-   
     trellis.par.set("superpose.symbol", superpose.symbol())
-    
-    lattice::dotplot(Instrument ~ time | method,
-                     groups = method,
-                     data = dataSummary(),
-                     alpha = 0.2,
-                     cex = 2.4,
-                     pch = 22,
-                     layout = c(1, 3),
-                     main = "instrument events")
+    shinydashboard::box(title = "Overview: Instrument ~ time | method",
+                        renderPlot({
+                          lattice::dotplot(Instrument ~ time | method,
+                                           groups = method,
+                                           data = dataSummary(),
+                                           alpha = 0.2,
+                                           cex = 2.4,
+                                           pch = 22,
+                                           layout = c(1, 3)
+                          )}, height = 600),
+                        width = 12,
+                        
+                        status = "primary",
+                        solidHeader = TRUE,
+                        collapsible = TRUE,
+                        footer = "Each dot represents an LC-MS QC run."
+    )
   })
   
   output$plotSummaryCumsum  <- renderPlot({
