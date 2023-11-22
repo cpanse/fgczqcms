@@ -5,14 +5,14 @@ stopifnot(require(shinydashboard))
 source('module-bfabricInstrumentEvent.R')
 source('module-autoQC03.R')
 
-imgBanner <- "/Users/cp/src/gitlab.bfabric.org/proteomics/qc/inst/shiny/fgczmsqc-dashboard/graphics/fgcz-header-background.png"
+imgBanner <- "graphics/fgcz-header-background.png"
 stopifnot(file.exists(imgBanner))
 
 tl <- tagList(
   tags$li(
     a(href = 'http://www.fgcz.ch', 
       target = "_blank",
-      img(src = "./graphics/fgcz-header-background.png", title = "FGCZ", height = "30px"),
+      img(src = imgBanner, title = "FGCZ", height = "30px"),
       style = "padding-top:10px; padding-bottom:5px;"),
     class = "dropdown"),
 )

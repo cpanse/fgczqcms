@@ -53,7 +53,7 @@ dump/autoQC03-diann.input.txt: /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt
 	  | egrep "autoQC03dia.*raw$$" \
 	  | tee $@ \
 	  | awk -F ";" '{print $$NF}' \
-	  | rsync -av --files-from="-" /srv/www/htdocs/ ./dump
+	  | rsync -av --chmod=D775,F444 --files-from="-" /srv/www/htdocs/ ./dump
 
 stageinput: dump/autoQC03-diann.input.txt
 
