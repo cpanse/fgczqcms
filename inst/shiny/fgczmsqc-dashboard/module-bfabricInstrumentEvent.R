@@ -2,12 +2,39 @@
 
 bfabricInstrumentEventUI <- function(id){
   ns <- NS(id)
+  
   htmlOutput(ns("ui"))
+  
 }
 
 bfabricInstrumentEventServer <- function(id, filterValues){
   moduleServer(id,
                function(input, output, session) {
+
+                 output$ui <- renderUI({
+                   
+                   status <- function(){
+                     if (filterValues$useBFabric){
+                       "primary"
+                     }else{
+                       "warning"
+                     }
+                   }
+                   shinydashboard::box(title = "B-Fabric instrument events",
+                                       tagList(
+                                         plotOutput(NS(id, "plotBfabricInstrumentEvents"), height = 600)
+                                       ),
+                                       status = status(),
+                                       solidHeader = TRUE,
+                                       collapsible = TRUE,
+                                       collapsed = !filterValues$useBFabric,
+                                       width = 12,
+                                       footer = "Once enabled, the graph displays all (including
+                       child instruments) instrument events fetched by the
+                       bfabric system.")
+                 })
+                 
+                 
                  ## Fetch bfabricInstrumentEventType ========
                  bfabricInstrumentEventTypeFetch <- reactive({
                    progress <- shiny::Progress$new(session = session)
@@ -77,20 +104,9 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    bfabricInstrumentEvents()[Filter, ]
                  })
                  
-                 
-                 output$ui <- renderUI({
-                   shinydashboard::box(plotOutput(NS(id, "plotSummaryBfabricEvents"),
-                                                  height = 600),
-                                       status = "primary",
-                                       solidHeader = TRUE,
-                                       collapsible = TRUE,
-                                       collapsed = !filterValues$useBFabric,
-                                       width = 12,
-                                       title = "Instrument events",
-                                       footer = "once enabled, graphs bfabric instrument events.")
-                 })
+
                  ## Plots ==================
-                 output$plotSummaryBfabricEvents <- renderPlot({
+                 output$plotBfabricInstrumentEvents <- renderPlot({
                    if (filterValues$useBFabric){
                      shiny::req(bfabricInstrumentEvents())
 
