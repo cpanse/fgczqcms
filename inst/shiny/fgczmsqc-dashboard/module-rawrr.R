@@ -38,13 +38,14 @@ rawrrUI <- function(id){
   
 }
 
-#' extracts and plots chromatographic profile of a given m/z list
+#' Extracts and plots chromatographic profile of a given m/z vector using the 
+#' rawrr Rpkg from Bioconductor.
 #'
 #' @param id shiny namespace id
-#' @param rawfile the complete path to the raw file
-#' @param mZ a vector of m/z values
-#'
-#' @return plots
+#' @param vals a reactive variable containing fn, the rawfile, and a numeric
+#' vector of mZ values. The names of the vector, e.g., AA sequeces, are used as
+#' labels.#'
+#' @return nothing
 rawrrServer <- function(id, vals){
   moduleServer(id,
                function(input, output, session) {
