@@ -40,7 +40,16 @@ rawrrUI <- function(id){
       collapsed = FALSE,
       status = "primary",
       solidHeader = TRUE,
-      width = 12)
+      width = 12),
+    shinydashboard::box(title = "raw file header",
+                        htmlOutput(NS(id, "fileHeader")),
+                        width = 8,
+                        collapsible = TRUE,
+                        collapsed = TRUE,
+                        status = "info",
+                        solidHeader = TRUE,
+                        footer= "extracts the meta information from a given raw file."
+                        ),
   )
   
 }
@@ -88,6 +97,13 @@ rawrrServer <- function(id, vals){
                      return(rv)
                    }
                  }) 
+                 
+                 output$fileHeader <- renderTable({
+                   vals$fn |> readFileHeader() -> rv
+                      data.frame(a = names(rv), b = rv |> as.character())
+                    
+                 
+                   }, colnames = FALSE, rownames = FALSE)
                  
                  output$plotChromatograms <- renderPlot({
                    shiny::req(peptideProfile())
