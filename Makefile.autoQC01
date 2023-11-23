@@ -5,8 +5,8 @@
 run: dump/autoQC01-fit-apex-auc-fwhm.txt
 
 dump/autoQC01-fit-apex-auc-fwhm.txt: dump/autoQC01.input.txt
-	R --no-save < R/autoQC01-fit-apex-auc-fwhm.R
-	touch $@
+	R -q -e  "source('R/autoQC01-fit-apex-auc-fwhm.R')" | tail
+	#touch $@
 
 
 input: dump/autoQC01.input.txt

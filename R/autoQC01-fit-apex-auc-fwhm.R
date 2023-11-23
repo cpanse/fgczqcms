@@ -140,16 +140,17 @@ Sout <- readr::read_delim(output, delim = ";",
 
 missing.idx <- which(!(Sin$filename %in% Sout$filename))
 
-S <- Sin[missing.idx, ]
+S <- Sin[missing.idx, ] |> tail(1000)
 
-S
-
-
-#f <- "p33379/Proteomics/QEXACTIVE_1/analytic_20231120/20231120_C33379_008_autoQC01.raw"
-#t <- 1700507408
-#.extractValues(file=f, time=t, outputfile="/tmp/sss")
-
-parallel::mcmapply(time = S$time, filename = S$filename,
+mapply(time = S$time, filename = S$filename,
 	FUN = function(time, filename){
-		try(.extractValues(file = filename, time = format(time, "%s"), outputfile = "/tmp/autoQC01-fit-apex-auc-fwhm.txt"))
-	}, mc.cores = 12)
+		dt <- difftime(Sys.time(), file.mtime(file.path("/srv/www/htdocs/", filename)),  unit = 'hour') |> as.numeric()
+
+		if (dt < 72){
+		   message(paste0("processing ", filename, " | mtime=", dt, "hours ..."))
+		   try(.extractValues(file = filename, time = format(time, "%s"), outputfile = output))
+		}else{
+		   message(paste0("skipping ", filename, " because mtime is older than expected ", " | mtime=", dt, "hours ..."))
+		}
+	}) -> rv
+quit('yes')
