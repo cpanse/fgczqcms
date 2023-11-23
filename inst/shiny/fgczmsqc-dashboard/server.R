@@ -136,36 +136,43 @@ function(input, output, session) {
     
     message(msg)
   })
-  
-  
+  ## autoQC03 debounce --------
   ## TODO(cp): rename it
-  observeEvent({input$cometTimeRange}, {
+  autoQC03TimeRange_d <- reactive({
+    shiny::req(input$cometTimeRange)
+    input$cometTimeRange
+  }) |> debounce(500)
+
+  observeEvent({autoQC03TimeRange_d()}, {
     #shiny::req(input$cometTimeRange)
     
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
     
     if (timeDiff < vals$timeRangeInSecs){
-      vals$timeMin <- input$cometTimeRange[1]
-      vals$timeMax <- input$cometTimeRange[2]
+      vals$timeMin <- autoQC03TimeRange_d()[1]
+      vals$timeMax <- autoQC03TimeRange_d()[2]
       
     }else{
       warning("timeDiff is higher than timeRange")
     }
   })
-  
-  observeEvent({input$autoQC01TimeRange}, {
+  ## autoQC01 debounce --------
+  autoQC01TimeRange_d <- reactive({
+    shiny::req(input$autoQC01TimeRange)
+    input$autoQC01TimeRange
+  }) |> debounce(500)
+  observeEvent({autoQC01TimeRange_d()}, {
     # shiny::req(input$autoQC01TimeRange)
    
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
     
     if (timeDiff < vals$timeRangeInSecs){
-      vals$timeMin <- input$autoQC01TimeRange[1]
-      vals$timeMax <- input$autoQC01TimeRange[2]
+      vals$timeMin <- autoQC01TimeRange_d()[1]
+      vals$timeMax <- autoQC01TimeRange_d()[2]
     }else{
       warning("timeDiff is higher than timeRange")
     }
   })
-  
   #  renderUIs =============
   ## TimeSliders ---------------
   output$autoQC01TimeSlider <- renderUI({
