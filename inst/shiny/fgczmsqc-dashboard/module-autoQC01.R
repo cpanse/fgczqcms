@@ -81,15 +81,12 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                      rawrrUI(NS(id, "rawrr01"))
                    }
                  })
-                 
                  ## autoQC01 ---------
                  autoQC01wide <- reactive({
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Reading autoQC01 lm data ...")
                    on.exit(progress$close())
-                   
                    config <- configServer("config1")
-                   
                    rv <- config$rootdir |>
                      file.path("autoQC01.csv") |>
                      readr::read_delim(
@@ -99,8 +96,7 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                                                size = col_integer(),                       
                                                n = col_integer()),
                        trim_ws = TRUE)
-                   
-                   
+
                    rv$Instrument <- NA
                    rv |> .assignInstrument(coln = 'filename')
                  })
@@ -197,9 +193,14 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                    rv$Instrument <- NA
                    rv |> .assignInstrument(coln = 'filename')
                  })
-                 
+
+                 peptides_d <- reactive({
+                   shiny::req(input$peptides)
+                   input$peptides
+                 }) |> debounce(2000)
+
                  data <- reactive({
-                   shiny::req(autoQC01APEXwide(), input$peptides)
+                   # shiny::req(autoQC01APEXwide(), peptides_d())
                    
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Reshaping autoQC01", detail = "Filtering", value = 1/3)
@@ -208,7 +209,7 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                    autoQC01APEXFilter <- autoQC01APEXwide()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < autoQC01APEXwide()$time &
                      autoQC01APEXwide()$time < filterValues$timeMax &
-                     autoQC01APEXwide()$peptide %in% input$peptides 
+                     autoQC01APEXwide()$peptide %in% peptides_d() 
                    
                    #&
                    #   as.integer(input$AUC.lg2.cutoff[1]) <= autoQC01APEXwide()$AUC.lg2 &
@@ -259,13 +260,15 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                    config <- configServer("config2")
                    vals$fn <- file.path(config$rootdirraw, np$filename[1])
                  })
-                 observeEvent(input$peptides, {
-                   vals$mZ <- .iRTmz()[names(.iRTmz()) %in% input$peptides]
+
+                 observeEvent(peptides_d(), {
+                   vals$mZ <- .iRTmz()[names(.iRTmz()) %in% peptides_d()] 
                  })
                  
                  ## ----------- ggplot2::ggplot -----------------
                  output$auc <- renderPlot({
-                   shiny::req(data())
+                   shiny::req(peptides_d())
+                   
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Plotting peptide data ...",
                                 detail  = paste0(input$variables, collapse = ' |'))
