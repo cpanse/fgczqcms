@@ -64,11 +64,12 @@ rawrrServer <- function(id, vals){
                  
                  rawfile <- reactive({ vals$fn })
 
+                
+                 
                  peptideProfile <- reactive({
-                   # invalidateLater(2000, session)
-                   reactiveTimer(intervalMs = 2000, session)
+
                    #shiny::req(rawfile())
-                   shiny::req(rawfile(), input$ppmError, vals$mZ)
+                   shiny::req(rawfile(), input$ppmError)
                    #shiny::req(vals$mZ)
                    
                    progress <- shiny::Progress$new(session = session)
@@ -86,7 +87,7 @@ rawrrServer <- function(id, vals){
                      message(paste0("length = ", length(rv)))
                      return(rv)
                    }
-                 })
+                 }) 
                  
                  output$plotChromatograms <- renderPlot({
                    shiny::req(peptideProfile())
