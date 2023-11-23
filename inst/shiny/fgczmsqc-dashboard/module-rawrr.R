@@ -73,7 +73,7 @@ rawrrServer <- function(id, vals){
                    #shiny::req(vals$mZ)
                    
                    progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Reading mZ profiles ...", detail = 'using rawrr')
+                   progress$set(message = "Reading mZ profiles", detail = 'from disk ...')
                    on.exit(progress$close())
                    
                    if (file.exists(rawfile())){
@@ -124,7 +124,7 @@ rawrrServer <- function(id, vals){
                  output$plotProfiles <- renderPlot({
                    if (length(peptideProfile()) > 0){
                      progress <- shiny::Progress$new(session = session)
-                     progress$set(message = "Plotting peptide profiles ...",
+                     progress$set(message = "Plotting peptide profiles",
                                   detail = 'pick- and fit-ing peaks ...', value = 2/5)
                      on.exit(progress$close())
                      
