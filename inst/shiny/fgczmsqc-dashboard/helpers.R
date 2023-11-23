@@ -175,6 +175,11 @@
   iRTmz
 }
 
+.iRTscores <- function(){
+  iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26, 54.62, 100)
+  names(iRTscore) <- names(.iRTmz())
+  iRTscore
+}
 
 
 .readDIANN <- function(filename){
@@ -232,4 +237,15 @@
   #idx <- order(e$comet$time)
   e$comet[, cc]  |>
     reshape2::melt(id.vars = c("Md5", "File.Name", "time", "Instrument", "scanType")) 
+}
+
+.status <- function(f){
+  dt <- difftime(Sys.time(), file.mtime(f),  unit='hour') 
+  if (dt > 12){
+    "danger"
+  }else if (dt < 1){
+    "success"
+  }else{
+    "primary"
+  }
 }

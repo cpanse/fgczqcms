@@ -61,13 +61,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                  })
                  output$ui <- renderUI({
                    
-                   status <- function(){
-                     if (difftime(Sys.time(), file.mtime(inputfile),  unit='hour') > 12){
-                       "danger"
-                     }else{
-                       "primary"
-                     }
-                   }
+                   
                    
                    tl <- tagList(
                      htmlOutput(ns("variable")),
@@ -84,7 +78,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      shinydashboard::box(
                        title = paste0(title, " plots - mtime: ", file.mtime(inputfile) |> strftime("%a %F %T")),
                        footer = footer,
-                       status = status(),
+                       status = .status(inputfile),
                        solidHeader = TRUE,
                        collapsible = TRUE,
                        width = 12,

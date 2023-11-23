@@ -106,7 +106,9 @@ dashboardPage(
                 h2("Session | debug - information"),
                 fluidRow(
                   shinydashboard::box(tagList(
-                    verbatimTextOutput("console", placeholder = TRUE)
+                    
+                    verbatimTextOutput("sessionInfo", placeholder = TRUE),
+                    verbatimTextOutput("clientDataText"),
                   ), width = 12)
                 )
               )

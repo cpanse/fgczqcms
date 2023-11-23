@@ -52,14 +52,6 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                    
                    v <- c("APEX", "AUC", "AUC.lg2", "FWHM")
                    
-                   status <- function(){
-                     if (difftime(Sys.time(), file.mtime(inputfile),  unit='hour') > 12){
-                       "danger"
-                     }else{
-                       "primary"
-                     }
-                   }
-                   
                    shinydashboard::box(title = paste0("AUC | APEX | FWHM  plots - mtime: ",
                                                       file.mtime(inputfile) |> strftime("%a %F %T")),
                      fluidRow(
@@ -77,7 +69,7 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                               )
                        )
                      ), footer = "click to analyze selected raw file below.",
-                     status = status(),
+                     status = .status(inputfile),
                      solidHeader = TRUE,
                      width = 12
                    )

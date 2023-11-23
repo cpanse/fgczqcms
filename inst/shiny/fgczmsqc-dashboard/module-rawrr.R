@@ -16,7 +16,7 @@ rawrrUI <- function(id){
                                            min = 0.0, max = 40, value = c(10, 29), step = 0.5,
                                            width = "100%"))),
                column(6, offset = 0,
-                      fluidRow(plotOutput(NS(id, "plotProfiles"))),
+                      fluidRow(plotOutput(NS(id, "plotTools"))),
                       column(5, offset = 1,
                              fluidRow(radioButtons(NS(id, "ppmError"), "ppm error",
                                                    choices = c(5, 10, 20, 30, 50, 100),
@@ -26,9 +26,16 @@ rawrrUI <- function(id){
                              )
                       )
                )
+             ),
+             fluidRow(
+               plotOutput(NS(id, "plotProfiles"))
              )
       ), title = "rawrr module",
-      footer = "extracts and plots chromatographic profiles of a given m/z list by reading the Orbitrap raw file.",
+      footer = "The graphs trace the AUC | APEX | FWHM value computation 
+      by extracting and
+      fitting chromatographic profiles of each given m/z value. The rawrr
+      package extracts the ion chromatograms from the selected Orbitrap raw
+      file.",
       collapsible = TRUE,
       collapsed = FALSE,
       status = "primary",
@@ -47,6 +54,7 @@ rawrrUI <- function(id){
 #' labels.#'
 #' @return nothing
 rawrrServer <- function(id, vals){
+  
   moduleServer(id,
                function(input, output, session) {
                  
@@ -57,6 +65,8 @@ rawrrServer <- function(id, vals){
                  rawfile <- reactive({ vals$fn })
 
                  peptideProfile <- reactive({
+                   # invalidateLater(2000, session)
+                   reactiveTimer(intervalMs = 2000, session)
                    #shiny::req(rawfile())
                    shiny::req(rawfile(), input$ppmError, vals$mZ)
                    #shiny::req(vals$mZ)
@@ -99,6 +109,17 @@ rawrrServer <- function(id, vals){
                    }
                  })
                  
+                 output$plotTools <- renderPlot({
+                   op <- par(mfrow = c(2, 2), mar=c(4,4,4,1))
+                   .rawrr_logo()
+                   
+                   peptideProfile() |>
+                     lapply(function(x)diff(x$times)) |>
+                     unlist() |> hist(xlab = "diff(times)", main = "Histogram")
+                   
+                   
+                 })
+                 
                  output$plotProfiles <- renderPlot({
                    if (length(peptideProfile()) > 0){
                      progress <- shiny::Progress$new(session = session)
@@ -106,18 +127,13 @@ rawrrServer <- function(id, vals){
                                   detail = 'pick- and fit-ing peaks ...', value = 2/5)
                      on.exit(progress$close())
                      
-                     if (length(vals$mZ) > 9){
-                       op <- par(mfrow = c(3, 4))
-                     }else if (length(vals$mZ) > 4){
-                       op <- par(mfrow = c(3, 3))
-                     }else if (length(vals$mZ) == 3){
-                       op <- par(mfrow = c(2, 2))
-                       .rawrr_logo()
-                     }else if (length(vals$mZ) > 2){
-                       op <- par(mfrow = c(2, 2))
-                     }else{
+                     
+                     if(length(vals$mZ) < 7){
                        op <- par(mfrow = c(1, length(vals$mZ)))
+                     }else{
+                       op <- par(mfrow = c(2, 6))
                      }
+                     
 
                      peptideProfile() |>
                        .pickPeak.rawrrChromatogram() |>

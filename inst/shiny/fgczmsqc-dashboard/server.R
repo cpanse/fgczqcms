@@ -18,6 +18,7 @@ source('module-rawrr.R')
 
 # define server logic ============
 function(input, output, session) {
+ 
   #  reactives =============
   
   ## >> reactiveValues defined here ##################
@@ -81,22 +82,6 @@ function(input, output, session) {
     iRTmz
   })
   
-  #### iRTprofileRawDDA --------------
-  iRTprofileRawDDA <- reactive({
-    shiny::req(input$file)
-    shiny::req(input$Ms1ppmError)
-    shiny::req(iRTmz())
-    
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Reading iRT peptide profiles ...")
-    on.exit(progress$close())
-    
-    file.path(rootdirraw(), input$file) |>
-      rawrr::readChromatogram(mass = iRTmz(),
-                              tol = as.integer(input$Ms1ppmError),
-                              type = "xic",
-                              filter = "ms")
-  })
   
   
   ####### instruments -----------
@@ -113,26 +98,7 @@ function(input, output, session) {
     NULL
   })
   
-  files <- reactive({
-    progress <- shiny::Progress$new(session = session)
-    progress$set(message = "Composing file list ...")
-    on.exit(progress$close())
-    
-    c( #(autoQC01Data()$filename |> unique()),
-      (diannData()$File.Name |> unique()),
-      (cometData()$File.Name |> unique())) |>
-      unique() |>
-      lapply(function(f){
-        if(file.exists(file.path(rootdirraw(), f))){return(f)}
-        else{
-          # msg <- paste0("Can not find file ", f)
-          # message(msg)
-        }
-        NULL
-      }) |>
-      unlist() 
-  })
-  
+
   observeEvent({ input$useBfabric }, {
     vals$useBFabric <- input$useBfabric
   })
@@ -142,7 +108,7 @@ function(input, output, session) {
   })
   observeEvent({ input$timeRange }, {
     #shiny::req(input$timeRange)
-    
+
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
     if (timeDiff < as.integer(input$timeRange) * 3600 * 24){
       vals$timeRangeInSecs <- as.integer(input$timeRange) * 3600 * 24
@@ -171,6 +137,8 @@ function(input, output, session) {
     message(msg)
   })
   
+  
+  ## TODO(cp): rename it
   observeEvent({input$cometTimeRange}, {
     #shiny::req(input$cometTimeRange)
     
@@ -187,7 +155,7 @@ function(input, output, session) {
   
   observeEvent({input$autoQC01TimeRange}, {
     # shiny::req(input$autoQC01TimeRange)
-    
+   
     timeDiff <- difftime(vals$timeMax, vals$timeMin, units = "secs")
     
     if (timeDiff < vals$timeRangeInSecs){
@@ -374,6 +342,7 @@ function(input, output, session) {
     progress$set(message = "Plotting TIC data ...")
     on.exit(progress$close())
     
+    
     par(mfrow = c(length(input$ticfile), 1))
     
     ticData() |> lapply(function(x){plot(x)})
@@ -393,32 +362,13 @@ function(input, output, session) {
     
   })
   
-  #### render sessionInfo ----
-  output$console <- renderPrint({
-    console <- function(){
-      list(
-        hostname = Sys.info()["nodename"] |>
-          as.character() |>
-          capture.output(),
-        autoQC01Tail = autoQC01() |>
-          tail(),
-        autoQC03DDATail = autoQC03DDA() |>
-          tail(),
-        autoQC03DIATail = autoQC03DIA() |>
-          tail(),
-        sessionInfo=sessionInfo(),
-        Sys.getenv=Sys.getenv()
-      )
-    }
-    
-    console()
-  })
+  
+
+  
   
   output$lastItems <- renderTable({
     idx.DDA <- which(max(autoQC03DDA()$time) == autoQC03DDA()$time)[1]
     idx.DIA <- which(max(autoQC03DIA()$time) == autoQC03DIA()$time)[1]
-    
-    
     
     df.DDA <- autoQC03DDA()[idx.DDA, c('File.Name', 'time', 'Instrument')]
     df.DDA$method <- "autoQC03 DDA"
@@ -436,6 +386,17 @@ function(input, output, session) {
     rv$time <- format(rv$time, "%Y-%m-%d %H:%M:%S")
     rv[, c( 'time', 'method', 'Instrument', 'File.Name')]
     
+  })
+  
+  # Values from cdata returned as text
+  output$clientDataText <- renderText({
+    cdata <- session$clientData
+    cnames <- names(cdata)
+    
+    allvalues <- lapply(cnames, function(name) {
+      paste(name, cdata[[name]], sep = " = ")
+    })
+    paste(allvalues, collapse = "\n")
   })
   
   output$sessionInfo <- renderPrint({
