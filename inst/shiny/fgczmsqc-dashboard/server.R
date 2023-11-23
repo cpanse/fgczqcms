@@ -251,17 +251,19 @@ function(input, output, session) {
   
   
   output$instrument <- renderUI({
-    fluidRow(selectInput('instrument', 'Instruments',
-                         instruments(),
-                         multiple = FALSE,
-                         selected = instruments()[1]))
+   # fluidRow(
+      selectInput('instrument', 'instruments',
+                  instruments(),
+                  multiple = FALSE,
+                  selected = instruments()[1])
+   # )
   })
   
   output$useBfabric <- renderUI({
     if (require(bfabricShiny)){
-      L <- fluidRow(checkboxInput('useBfabric',
+      L <- checkboxInput('useBfabric',
                                   'show B-Fabric Instrument Events',
-                                  value = FALSE))
+                                  value = FALSE)
       return(L)
     }
     NULL
@@ -347,6 +349,7 @@ function(input, output, session) {
     )
   })
   
+  
   output$plotSummaryCumsum  <- renderPlot({
     shiny::req(dataSummary())
     
@@ -359,9 +362,9 @@ function(input, output, session) {
   })
   
   ## printSummary --------
-  output$summary <- renderPrint({
-    capture.output( table(dataSummary()$method, dataSummary()$Instrument))
-  })
+  output$summaryFrequency <- renderTable({
+    (table(dataSummary()$method, dataSummary()$Instrument)) |> as.data.frame()
+  }, rownames = FALSE, colnames = FALSE)
   
   ## plot TICs --------
   output$plotTIC <- renderPlot({
@@ -409,6 +412,30 @@ function(input, output, session) {
     }
     
     console()
+  })
+  
+  output$lastItems <- renderTable({
+    idx.DDA <- which(max(autoQC03DDA()$time) == autoQC03DDA()$time)[1]
+    idx.DIA <- which(max(autoQC03DIA()$time) == autoQC03DIA()$time)[1]
+    
+    
+    
+    df.DDA <- autoQC03DDA()[idx.DDA, c('File.Name', 'time', 'Instrument')]
+    df.DDA$method <- "autoQC03 DDA"
+    
+    df.DIA <- autoQC03DIA()[idx.DIA, c('File.Name', 'time', 'Instrument')]
+    df.DIA$method <- "autoQC03 DIA"
+  
+    idx.autoQC01 <- which(max(autoQC01()$time) == autoQC01()$time)[1]
+    
+    df.autoQC01 <- autoQC01()[idx.autoQC01, c('filename', 'time', 'Instrument')]
+    colnames(df.autoQC01 )[colnames(df.autoQC01 ) == "filename"] <- "File.Name"
+    df.autoQC01$method <- "autoQC01"   
+
+    list(df.DDA, df.DIA, df.autoQC01) |> Reduce(f = rbind) -> rv
+    rv$time <- format(rv$time, "%Y-%m-%d %H:%M:%S")
+    rv[, c( 'time', 'method', 'Instrument', 'File.Name')]
+    
   })
   
   output$sessionInfo <- renderPrint({

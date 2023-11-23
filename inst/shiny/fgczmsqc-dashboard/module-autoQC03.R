@@ -108,6 +108,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      ))
                  })
                  
+                 
+                 ## -----------click table ----------------
                  output$plot <- renderPlot({
                    shiny::req(dataFiltered(), input$variables)
 

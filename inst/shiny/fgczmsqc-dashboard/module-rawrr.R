@@ -55,9 +55,7 @@ rawrrServer <- function(id, vals){
                  })
                  
                  rawfile <- reactive({ vals$fn })
-                 
-                 
-                 
+
                  peptideProfile <- reactive({
                    #shiny::req(rawfile())
                    shiny::req(rawfile(), input$ppmError, vals$mZ)
