@@ -1,10 +1,7 @@
 #R
-
-
 autoQC01UI <- function(id){
   ns <- NS(id)
-  
- 
+
   tagList(
     shinydashboard::box(title = "InstrumentEvents",
                         fluidRow(htmlOutput(ns("instrumentEventsOutput"))),

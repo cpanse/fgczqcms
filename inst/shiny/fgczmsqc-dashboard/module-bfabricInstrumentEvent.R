@@ -15,7 +15,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    
                    status <- function(){
                      if (filterValues$useBFabric){
-                       "primary"
+                       "info"
                      }else{
                        "warning"
                      }

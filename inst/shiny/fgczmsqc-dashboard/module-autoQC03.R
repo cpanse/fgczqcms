@@ -3,9 +3,12 @@
 
 autoQC03UI <- function(id){
   ns <- NS(id)
-  fluidRow(
-    htmlOutput(ns("ui")),
-    width = 12)
+  tagList(
+    fluidRow(
+      htmlOutput(ns("ui")),
+      width = 12),
+    htmlOutput(NS(id, "rawrrEnableUI"))
+  )
 }
 
 
@@ -21,6 +24,45 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
+                 
+                 vals <- reactiveValues(fn = NA, mZ = .iRTmz(), hover="TEST")
+                 
+                 rawrrServer("rawrr-autoQC03", vals) 
+                 
+                 output$rawrrEnableUI <- renderUI({
+                   shiny::req(vals$fn)
+                   if (file.exists(vals$fn)){
+                     rawrrUI(NS(id, "rawrr-autoQC03"))
+                   }else{
+                     warning(paste0("raw file ", vals$fn, " does not exist."))
+                   }
+                 })
+                 
+                 output$hoverInfo <- renderUI({
+                    shiny::req(vals$hover)
+                     HTML(vals$hover)
+                   
+                 })
+                 observeEvent(input$hoverInfo, {
+                   if(!is.null(input$hoverInfo)){
+                     np <- nearPoints(data(), input$hoverInfo, xvar = "time", yvar = "value")
+                     
+                     cat("Hover (throttled):\n")
+                     str(np$File.Name[1])
+                     vals$hover <- np$File.Name[1]
+                   }
+                 })
+                 ## observeEvent =================
+                 observeEvent(input$plotClick, {
+                   np <- nearPoints(data(), input$plotClick, xvar = "time", yvar = "value")
+                   
+                   message(paste0("plotClick: ", np$filename, collapse = " | "))
+                   
+                   config <- configServer("config2")
+                   vals$fn <- file.path(config$rootdirraw, np$File.Name[1])
+                 })
+                 
+                 
                  data <- reactive({
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = paste0("Reading ", title, "data ..."))
@@ -61,16 +103,22 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                  })
                  output$ui <- renderUI({
                    
-                   
-                   
                    tl <- tagList(
-                     htmlOutput(ns("variable")),
-                     shinydashboard::box(plotOutput(ns("plot")),
-                                         status = "primary",
-                                         solidHeader = TRUE,
-                                         collapsible = FALSE,
-                                         width = 12)
-                   )
+                     fluidRow(
+                       column(6,
+                              htmlOutput(ns("variable")),
+                       ),
+                       column(6,
+                              htmlOutput(ns("hoverInfo"))
+                       ),
+                       shinydashboard::box(plotOutput(ns("plot"),
+                                                      hover = hoverOpts(NS(id, "hoverInfo"), delay = 200, nullOutside = TRUE),
+                                                      click = NS(id, "plotClick")),
+                       status = "primary",
+                       solidHeader = TRUE,
+                       collapsible = FALSE,
+                       width = 12)
+                     )) # tagList
                    if (filterValues$useBFabric){
                      tl <- append(tl, tagList(htmlOutput(ns("instrumentEvents"))))
                    }
@@ -103,31 +151,32 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                  })
                  
                  
+              
                  ## -----------click table ----------------
                  output$plot <- renderPlot({
                    shiny::req(dataFiltered(), input$variables)
-
+                   
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = paste0("ggplotting ", title, "data ..."))
                    on.exit(progress$close())
-
+                   
                    message(paste0("nrow dataFiltered(): ", nrow(dataFiltered())))
-
+                   
                    if (nrow(dataFiltered()) == 0){
                      .missing()
                      return()
                    }
-
+                   
                    dataFiltered() |> 
                      subset(variable %in% input$variables) |> 
                      ggplot2::ggplot(ggplot2::aes(time, value)) +
                      ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)  -> gp
-
+                   
                    if ("scanType" %in% names(dataFiltered())){
                      gp +
                        ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
                        ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
-
+                     
                    }else{
                      gp +
                        ggplot2::geom_point(ggplot2::aes(time, value), alpha = 0.4) +
@@ -139,7 +188,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                                               color = "red", size = 1) -> gp
                    }
                    gp
-                 })
+                 }, res = 96)
                  return(data)
                })
 }

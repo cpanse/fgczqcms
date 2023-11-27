@@ -1,6 +1,5 @@
 #R
-
-
+## https://gitlab.bfabric.org/proteomics/qc
 stopifnot(require(rawrr))
 
 source("helpers-rawrr.R")
@@ -63,37 +62,64 @@ rawrrUI <- function(id){
 #' labels.#'
 #' @return nothing
 rawrrServer <- function(id, vals){
-  
+
   moduleServer(id,
                function(input, output, session) {
-                 
+                 ## 
                  observeEvent(vals$fn, {
                    message(paste0("fn has changed to ", vals$fn))
                  })
                  
                  rawfile <- reactive({ vals$fn })
 
-                
                  
-                 peptideProfile <- reactive({
-
-                   #shiny::req(rawfile())
+                 tic <- reactive({
                    shiny::req(rawfile(), input$ppmError)
-                   #shiny::req(vals$mZ)
                    
                    progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Reading mZ profiles", detail = 'from disk ...')
+                   progress$set(message = "Reading TIC", detail = 'from raw file ...')
                    on.exit(progress$close())
                    
                    if (file.exists(rawfile())){
+
+                     rawfile() |>
+                       rawrr::readChromatogram(type = 'tic',
+                                               tol = as.integer(input$ppmError)) -> rv
+                       return(rv)
+                   }
+                 })
+                 
+                 bpc <- reactive({
+                   shiny::req(rawfile(), input$ppmError)
+                   
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Reading BPC", detail = 'from raw file ...')
+                   on.exit(progress$close())
+                   
+                   if (file.exists(rawfile())){
+                     
+                     rawfile() |>
+                       rawrr::readChromatogram(type = 'bpc',
+                                               tol = as.integer(input$ppmError)) -> rv
+                      return(rv)
+                   }
+                 })
+                 
+                 peptideProfile <- reactive({
+                   shiny::req(rawfile(), input$ppmError)
+
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Reading mZ profiles", detail = 'from raw file ...')
+                   on.exit(progress$close())
+
+                   if (file.exists(rawfile())){
                      message("Reading raw file: ", vals$fn)
-                     rv <- rawrr::readChromatogram(rawfile = rawfile(),
+                     
+                     rawfile() |>
+                      rawrr::readChromatogram(type = "xic",
                                                    mass = vals$mZ,
                                                    tol = as.integer(input$ppmError),
-                                                   type = "xic",
-                                                   filter = "ms")
-                     
-                     message(paste0("length = ", length(rv)))
+                                                   filter = "ms") -> rv
                      return(rv)
                    }
                  }) 
@@ -101,8 +127,6 @@ rawrrServer <- function(id, vals){
                  output$fileHeader <- renderTable({
                    vals$fn |> readFileHeader() -> rv
                       data.frame(a = names(rv), b = rv |> as.character())
-                    
-                 
                    }, colnames = FALSE, rownames = FALSE)
                  
                  output$plotChromatograms <- renderPlot({
@@ -134,6 +158,8 @@ rawrrServer <- function(id, vals){
                      lapply(function(x)diff(x$times)) |>
                      unlist() |> hist(xlab = "diff(times)", main = "Histogram")
                    
+                   tic() |> plot()
+                   bpc() |> plot()
                    
                  })
                  
