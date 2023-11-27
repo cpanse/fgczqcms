@@ -110,6 +110,7 @@
   list(EXPLORIS_2 = 335,
        EXPLORIS_1 = 253,
        LUMOS_2 = 252,
+       TIMSTOF_1 = 218,
        LUMOS_1 = 214,
        QEXACTIVE_1 = 93,
        FUSION_2 = 73,
