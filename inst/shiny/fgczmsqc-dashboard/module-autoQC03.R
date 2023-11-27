@@ -6,11 +6,9 @@ autoQC03UI <- function(id){
   tagList(
     fluidRow(
       htmlOutput(ns("ui")),
-      width = 12),
-    htmlOutput(NS(id, "rawrrEnableUI"))
+      width = 12)
   )
 }
-
 
 #' autoQC01Server shiny module
 #' 
@@ -24,7 +22,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
-                
+                 
                  rootdirraw <- reactive({
                    config <- configServer("config2")
                    config$rootdirraw
@@ -137,13 +135,15 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                        column(6,
                               htmlOutput(ns("hoverInfo"))
                        ),
+                       
                        shinydashboard::box(plotOutput(ns("plot"),
                                                       hover = hoverOpts(NS(id, "hoverInfo"), delay = 200, nullOutside = TRUE),
                                                       click = NS(id, "plotClick")),
-                       status = "primary",
-                       solidHeader = TRUE,
-                       collapsible = FALSE,
-                       width = 12)
+                                           
+                                           status = "primary",
+                                           solidHeader = TRUE,
+                                           collapsible = FALSE,
+                                           width = 12)
                      )) # tagList
                    if (filterValues$useBFabric){
                      tl <- append(tl, tagList(htmlOutput(ns("instrumentEvents"))))
@@ -156,7 +156,9 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                        solidHeader = TRUE,
                        collapsible = TRUE,
                        width = 12,
-                       tl
+                       tagList(tl,
+                               htmlOutput(NS(id, "rawrrEnableUI"))
+                       ),
                      ),
                    )
                  })
@@ -175,9 +177,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                        DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
                      ))
                  })
-                 
-                 
-              
+
                  ## -----------click table ----------------
                  output$plot <- renderPlot({
                    shiny::req(dataFiltered(), input$variables)

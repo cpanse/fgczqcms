@@ -22,9 +22,9 @@ dashboardPage(
   dashboardHeader(title = "FGCZ MS QC", .list = tl),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line"),
-               badgeLabel = "alpha", badgeColor = "fuchsia"),
       menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line")),
+      menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line")),
+#               badgeLabel = "alpha", badgeColor = "fuchsia"),
       menuItem("summary | status", tabName = "summary", icon = icon("table")),
       hr(),
       htmlOutput("instrument"),

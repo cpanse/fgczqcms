@@ -125,6 +125,10 @@ rawrrServer <- function(id, vals){
                  }) 
                  
                  output$fileHeader <- renderTable({
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Reading File Header ...")
+                   on.exit(progress$close())
+                   
                    vals$fn |> readFileHeader() -> rv
                       data.frame(a = names(rv), b = rv |> as.character())
                    }, colnames = FALSE, rownames = FALSE)
