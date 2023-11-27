@@ -24,8 +24,12 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
-                 
-                 vals <- reactiveValues(fn = NA, mZ = .iRTmz(), hover="TEST")
+                
+                 rootdirraw <- reactive({
+                   config <- configServer("config2")
+                   config$rootdirraw
+                 })
+                 vals <- reactiveValues(fn = NA, mZ = .iRTmz(), hover = NA)
                  
                  rawrrServer("rawrr-autoQC03", vals) 
                  
@@ -37,11 +41,33 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      warning(paste0("raw file ", vals$fn, " does not exist."))
                    }
                  })
-                 
+                 .fileStatus <- function(p, f){
+                   message(f)
+                   if (is.na(f)){
+                     "primary"
+                   }
+                   else if (file.exists(file.path(p, f))){
+                     "success"
+                   }else{
+                     "danger"
+                   }
+                 }
                  output$hoverInfo <- renderUI({
-                    shiny::req(vals$hover)
-                     HTML(vals$hover)
+                   shiny::req(vals$hover)
+                   L <- tagList()
+                   if (is.na(vals$hover$File.Name)){
+                     L <- HTML("Hover over a point to see file information. <br>
+                               Click on a point to trace peptides and gather raw file header information.")
+                   }else{
+                     L <- renderTable(t(vals$hover[, c('File.Name', 'time')]), rownames = T, colnames = F)
+                   }
                    
+                   shinydashboard::box(title = 'file information',
+                                       L,
+                                       status = .fileStatus(rootdirraw(), vals$hover$File.Name),
+                                       solidHeader = TRUE,
+                                       collapsible = FALSE,
+                                       width = 12)
                  })
                  observeEvent(input$hoverInfo, {
                    if(!is.null(input$hoverInfo)){
@@ -49,7 +75,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      
                      cat("Hover (throttled):\n")
                      str(np$File.Name[1])
-                     vals$hover <- np$File.Name[1]
+                     vals$hover <- np[1, ]
                    }
                  })
                  ## observeEvent =================
@@ -58,8 +84,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                    
                    message(paste0("plotClick: ", np$filename, collapse = " | "))
                    
-                   config <- configServer("config2")
-                   vals$fn <- file.path(config$rootdirraw, np$File.Name[1])
+                   
+                   vals$fn <- file.path(rootdirraw(), np$File.Name[1])
                  })
                  
                  
