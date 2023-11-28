@@ -261,38 +261,35 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                  observeEvent(peptides_d(), {
                    vals$mZ <- .iRTmz()[names(.iRTmz()) %in% peptides_d()] 
                  })
-                 
+
                  ## ----------- ggplot2::ggplot -----------------
                  output$auc <- renderPlot({
-                   shiny::req(peptides_d())
-                   
+                   shiny::req(data(), peptides_d())
                    progress <- shiny::Progress$new(session = session)
                    progress$set(message = "Plotting peptide data ...",
                                 detail  = paste0(input$variables, collapse = ' |'))
                    on.exit(progress$close())
-                   
-                   data() |>
-                     subset(variable %in% input$variables) |> 
-                     ggplot2::ggplot(ggplot2::aes(time, value)) +
-                     ggplot2::geom_point(ggplot2::aes(color = peptide), alpha = 0.4) +
-                     ggplot2::geom_line(ggplot2::aes(group = peptide, color = peptide), alpha = 0.4) +
-                     ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)  -> gp
-                   
-                   if (filterValues$useBFabric){
-                     gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time, linetype="dashed", 
-                                              color = "red", size = 1) -> gp
-                   }
-                   
-                   gp
+                   if (nrow(data()) > 0){
+                     data() |>
+                       subset(variable %in% input$variables) |>
+                       ggplot2::ggplot(ggplot2::aes(time, value)) +
+                       ggplot2::geom_point(ggplot2::aes(color = peptide), alpha = 0.4) +
+                       ggplot2::geom_line(ggplot2::aes(group = peptide, color = peptide), alpha = 0.4) +
+                       ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)  -> gp
+                     if (filterValues$useBFabric){
+                       gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time, linetype="dashed",
+                                                color = "red", size = 1) -> gp
+                     }
+                     gp
+                   }else{.missing()}
                  }, res = 96)
-                 
+
                  output$instrumentEventsOutput <- renderUI({
                    if (filterValues$useBFabric){
                      shiny::req(BFabric$bfabricInstrumentEventsFiltered())
                      DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
                    }
                  })
-                 
                  return(autoQC01wide)
                }
   )
