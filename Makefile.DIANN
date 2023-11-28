@@ -10,11 +10,13 @@
 
 SHELL=/bin/bash
 
-.SUFFIXES: .mzML .raw .csv .fasta .fas .zip .xmllint .diann
+.SUFFIXES: .mzML .raw .csv .fasta .fas .zip .xmllint .diann .d.zip .d
 .PHONY : dep clean .clean.raw .clean.zip test check .check-diann .check-FASTA 
 
 NOW               = $(shell date +"%Y-%m-%dT%H:%M:%S%:z")
 RAW               = $(shell find . -type f -name "*.raw")
+DZIP              = $(shell find . -type f -name "*.d.zip")
+D                 = $(DZIP:.d.zip=.d)
 MZML              = $(RAW:.raw=.mzML)
 XMLLINT           = $(MZML:.mzML=.xmllint)
 OUTPUT            = $(MZML:.mzML=.diann)
@@ -29,7 +31,8 @@ DIANNTEMP     = $(PWD)/temp
 
 
 list:
-	ls -l $(RAW)
+	echo $(D)
+	echo $(RAW)
 	echo $(MZMLCHECK)
 	echo $(XMLLINT)
 	echo $(OUTPUT)
@@ -43,14 +46,15 @@ diann: $(OUTPUT)
 .raw.mzML:
 	docker run -t --network none -w ${PWD} -v ${PWD}:${PWD} -v /scratch/mzML/:/scratch/mzML/ $(MSCONVERTOPTS) $< -o /scratch/mzML && cp -v /scratch/mzML//$(shell basename $< .raw).mzML $@
 
-unzip: 
-	ls | grep .d.zip$$ | parallel -j 16 unzip 
+.d.zip.d: 
+	unzip $< -d $@
+unzip: $(D)
 
 
 
-dump/autoQC03-diann.input.txt: /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt
+dump/autoQC03-diann.input.txt: /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt Makefile.DIANN
 	cat $< \
-	  | egrep "autoQC03dia.*raw$$" \
+	  | egrep "autoQC03.*dia.*(raw|zip)$$" \
 	  | tee $@ \
 	  | awk -F ";" '{print $$NF}' \
 	  | rsync -av --chmod=D775,F444 --files-from="-" /srv/www/htdocs/ ./dump
