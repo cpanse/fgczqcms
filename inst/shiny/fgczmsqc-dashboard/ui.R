@@ -24,7 +24,8 @@ dashboardPage(
     sidebarMenu(
       menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line")),
       menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line")),
-#               badgeLabel = "alpha", badgeColor = "fuchsia"),
+  menuItem("autoQC01beta", tabName = "autoQC01beta", icon = icon("chart-line"),
+                 badgeLabel = "cp only", badgeColor = "olive"),
       menuItem("summary | status", tabName = "summary", icon = icon("table")),
       hr(),
       htmlOutput("instrument"),
@@ -67,6 +68,12 @@ dashboardPage(
                 htmlOutput("cometTimeSlider"),
                 autoQC03UI("autoQC03-DDA"),
                 autoQC03UI("autoQC03-DIA")
+              )
+      ),
+      tabItem(tabName = "autoQC01beta",
+              tagList(
+                fluidRow(h2("autoQC01 using autoQC03 module")),
+                autoQC03UI("__autoQC01__"),
               )
       ),
       tabItem(tabName = "summary",

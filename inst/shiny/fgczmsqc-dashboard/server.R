@@ -59,6 +59,15 @@ function(input, output, session) {
                                 title = "Data-independent acquisition",
                                 footer = "We compose the graphs by utilizing DIA-NN (check it out at https://github.com/vdemichev/DiaNN) and incorporating UP000005640 FASTA as input. We convert Orbitrap raw  files prior to mzML, employing ProteoWizard through  Docker and wine.")
   
+  
+  
+  autoQC01alpha <- autoQC03Server("__autoQC01__", filterValues = vals,
+                                   BFabric = BFabric,
+                                   inputfile = file.path(rootdir(), 'autoQC01-fit-apex-auc-fwhm.txt'),
+                                   readFUN = .readAutoQC01,
+                                   title = "autoQC01",
+                                   footer = "We compose the graphs by utilizing rawrr.")
+  
   output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")
   })
