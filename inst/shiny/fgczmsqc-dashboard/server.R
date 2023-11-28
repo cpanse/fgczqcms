@@ -9,12 +9,13 @@ stopifnot(require(readr),
           require(lattice),
           require(rawrr))
 
-source('helpers.R')
+source('helpers-ggplot2.R')
 source('helpers-readr.R')
-source('module-config.R')
+source('helpers.R')
 source('module-autoQC01.R')
 source('module-autoQC03.R')
 source('module-bfabricInstrumentEvent.R')
+source('module-config.R')
 source('module-rawrr.R')
 
 # define server logic ============
@@ -49,6 +50,7 @@ function(input, output, session) {
                                 BFabric = BFabric,
                                 inputfile = file.path(rootdir(), "comet.RData"),
                                 readFUN = .readComet,
+                                ggplot2FUN = .ggplotAutoQC03,
                                 title = "Data-dependent acquisition",
                                 footer = "Running Comet (refer to https://github.com/UWPR/Comet) and utilizing UP000005640 FASTA as input generates the graphs.")
   
@@ -56,6 +58,7 @@ function(input, output, session) {
                                 BFabric = BFabric,
                                 inputfile = file.path(rootdir(), "autoQC03-diann.txt"),
                                 readFUN = .readDIANN,
+                                ggplot2FUN = .ggplotAutoQC03,
                                 title = "Data-independent acquisition",
                                 footer = "We compose the graphs by utilizing DIA-NN (check it out at https://github.com/vdemichev/DiaNN) and incorporating UP000005640 FASTA as input. We convert Orbitrap raw  files prior to mzML, employing ProteoWizard through  Docker and wine.")
   
@@ -65,6 +68,7 @@ function(input, output, session) {
                                    BFabric = BFabric,
                                    inputfile = file.path(rootdir(), 'autoQC01-fit-apex-auc-fwhm.txt'),
                                    readFUN = .readAutoQC01,
+                                   ggplot2FUN = .ggplotAutoQC01,
                                    title = "autoQC01",
                                    footer = "We compose the graphs by utilizing rawrr.")
   

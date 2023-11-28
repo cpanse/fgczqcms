@@ -57,7 +57,7 @@
     reshape2::melt(id.vars = c("Md5", "File.Name", "time", "Instrument", "scanType")) 
 }
 
-#' .readAutoQC01('/Users/cp/Downloads/dump/autoQC01-fit-apex-auc-fwhm.txt') ->S
+#' .readAutoQC01('/Users/cp/Downloads/dump/autoQC01-fit-apex-auc-fwhm.txt') -> S
 #' lattice::xyplot(value ~ time | Instrument * variable, group = peptide, data = S, scales = list(y = list(relation = "free")), pch = '.')
 .readAutoQC01 <- function(filename){
   

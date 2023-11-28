@@ -1,5 +1,6 @@
 #R
 
+source("helpers-ggplot2.R")
 
 autoQC03UI <- function(id){
   ns <- NS(id)
@@ -18,7 +19,7 @@ autoQC03UI <- function(id){
 #'
 #' @param id 
 #' @param filterValues time and instrument information
-autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title, footer){
+autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot2FUN, title, footer){
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
@@ -50,12 +51,13 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      L <- renderTable(t(vals$hover[, c('File.Name', 'time')]), rownames = T, colnames = F)
                    }
                    
-                   shinydashboard::box(title = 'file information',
+                   shinydashboard::box(title = 'File Information',
                                        L,
                                        status = .fileStatus(rootdirraw(), vals$hover$File.Name),
                                        solidHeader = TRUE,
                                        collapsible = FALSE,
-                                       width = 12)
+                                       width = 12,
+                                       height = 150)
                  })
                  observeEvent(input$hoverInfo, {
                    if(!is.null(input$hoverInfo)){
@@ -92,7 +94,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                    dataVariables() %in% c('nConfidentProteins',
                                           'nConfidentPeptides',
                                           'nMS2', 'Precursors.Identified',
-                                          'Proteins.Identified', 'FWHM.RT') |> 
+                                          'Proteins.Identified', 'FWHM.RT', 'AUC.lg2') |> 
                      which() -> defaulVariablesIdx 
                    
                    shinydashboard::box(
@@ -104,6 +106,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      status = "primary",
                      solidHeader = TRUE,
                      collapsible = FALSE,
+                     width = 12,
+                     height = 150,
                    )
                  })
                  dataFiltered <- reactive({
@@ -156,15 +160,15 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                  ## TODO(cp): add module parameter when the table should be collapsed
                  output$instrumentEvents <- renderUI({
                    shinydashboard::box(title = "Instrument events",
-                     status = "primary",
-                     solidHeader = TRUE,
-                     collapsible = TRUE,
-                     width = 12,
-                     tagList(
-                       DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
-                     ))
+                                       status = "primary",
+                                       solidHeader = TRUE,
+                                       collapsible = TRUE,
+                                       width = 12,
+                                       tagList(
+                                         DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
+                                       ))
                  })
-
+                 
                  ## -----------click table ----------------
                  output$plot <- renderPlot({
                    shiny::req(dataFiltered(), input$variables)
@@ -180,28 +184,12 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      return()
                    }
                    
-                   dataFiltered() |> 
-                     subset(variable %in% input$variables) |> 
-                     ggplot2::ggplot(ggplot2::aes(time, value)) +
-                     ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)  -> gp
                    
-                   if ("scanType" %in% names(dataFiltered())){
-                     gp +
-                       ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
-                       ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
-                     
-                   }else{
-                     gp +
-                       ggplot2::geom_point(ggplot2::aes(time, value), alpha = 0.4) +
-                       ggplot2::geom_line(ggplot2::aes(time, value), alpha = 0.4) -> gp
-                   }
                    if (filterValues$useBFabric){
-                     gp + ggplot2::geom_vline(xintercept = BFabric$bfabricInstrumentEventsFiltered()$time,
-                                              linetype="dashed", 
-                                              color = "red", size = 1) -> gp
-                   }
-                   gp
-                 }, res = 96)
+                     ggplot2FUN( dataFiltered(), input$variables, filterValues$useBFabric, BFabric$bfabricInstrumentEventsFiltered()$time)
+                   }else{
+                     ggplot2FUN( dataFiltered(), input$variables)
+                   }}, res = 96)
                  return(data)
                })
 }
