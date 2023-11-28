@@ -146,7 +146,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                                            width = 12)
                      )) # tagList
                    if (filterValues$useBFabric){
-                     tl <- append(tl, tagList(htmlOutput(ns("instrumentEvents"))))
+                     tl <- append(tagList(htmlOutput(ns("instrumentEvents"))), tl)
                    }
                    tagList(
                      shinydashboard::box(
@@ -165,10 +165,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                  ## render instrumentEvents
                  ## TODO(cp): add module parameter when the table should be collapsed
                  output$instrumentEvents <- renderUI({
-                   ## disable next line because it will start fetching data
-                   # shiny::req(BFabric$bfabricInstrumentEventsFiltered())
-                   shinydashboard::box(
-                     title = "Instrument events",
+                   shinydashboard::box(title = "Instrument events",
                      status = "primary",
                      solidHeader = TRUE,
                      collapsible = TRUE,
