@@ -37,10 +37,26 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
-                 vals <- reactiveValues(fn = NA, mZ = .iRTmz())
+                 rootdirraw <- reactive({
+                   config <- configServer("config2")
+                   config$rootdirraw
+                 })
+                 
+                 vals <- reactiveValues(fn = NA,
+                                        mZ = .iRTmz(),
+                                        hover = NA)
                  
                  rawrrServer("rawrr01", vals) #[names(.iRTmz()) %in% input$peptides])
-                 
+                 ## observeEvent hover ================
+                 observeEvent(input$hoverInfo, {
+                   if(!is.null(input$hoverInfo)){
+                     np <- nearPoints(data(), input$hoverInfo, xvar = "time", yvar = "value")
+                     
+                     cat("Hover (throttled):\n")
+                     str(np$filename[1])
+                     vals$hover <- np[1, ]
+                   }
+                 })
                  output$AucApexFwhmUI <- renderUI({
                    p <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
                           "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
@@ -56,12 +72,13 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                               tagList(
                                 plotOutput(NS(id, "auc"),
                                            click = NS(id, "plot_click"),
+                                           hover = hoverOpts(NS(id, "hoverInfo"), delay = 200, nullOutside = TRUE),
                                            height = 600))),
                        column(3, offset = 0,
                               tagList(
                                 selectInput(ns('peptides'), "peptides", multiple = TRUE, choices = p, selected = p[c(1, 6, 11)]),
                                 selectInput(ns('variables'), "variables", multiple = TRUE, choices = v, selected = c("APEX", "AUC.lg2")),
-                                tableOutput(NS(id, "nearAuc")),
+                                tableOutput(NS(id, "hoverInfo")),
                                 #sliderInput(ns('AUC.lg2.cutoff'), "AUC.lg2.cutoff", min = 9, max = 40, value = c(10, 40) , step = 1),
                               )
                        )
@@ -240,11 +257,28 @@ autoQC01Server <- function(id, filterValues, BFabric, inputfile){
                    #str(paste0(np$filename, collapse = " | "))
                  })
                  
+                 output$hoverInfo <- renderUI({
+                   shiny::req(vals$hover)
+                   L <- tagList()
+                   if (is.na(vals$hover$filename)){
+                     L <- HTML("Hover over a point to see file information. <br>
+                               Click on a point to trace peptides and gather raw file header information.")
+                   }else{
+                     L <- renderTable(t(vals$hover[, c('filename', 'time')]), rownames = T, colnames = F)
+                   }
+                   
+                   shinydashboard::box(title = 'file information',
+                                       L,
+                                       status = .fileStatus(rootdirraw(), vals$hover$filename),
+                                       solidHeader = TRUE,
+                                       collapsible = FALSE,
+                                       width = 12)
+                 })
                  ## -----------click table ----------------
                  output$nearAuc <- renderTable({
-                   req(input$plot_click)
-                   np <- nearPoints(data(), input$plot_click, xvar = "time", yvar = "value")
-                   message(paste0("plot_click: ", np$filename, collapse = " | "))
+                   req(input$hoverInfo)
+                   np <- nearPoints(data(), input$hoverInfo, xvar = "time", yvar = "value")
+                   message(paste0("hoverInfo: ", np$filename, collapse = " | "))
                    t(np[1,])
                  }, rownames = T, colnames = F)
                  
