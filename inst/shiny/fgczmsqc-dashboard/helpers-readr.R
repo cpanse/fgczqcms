@@ -56,3 +56,27 @@
   e$comet[, cc]  |>
     reshape2::melt(id.vars = c("Md5", "File.Name", "time", "Instrument", "scanType")) 
 }
+
+#' .readAutoQC01('/Users/cp/Downloads/dump/autoQC01-fit-apex-auc-fwhm.txt') ->S
+#' lattice::xyplot(value ~ time | Instrument * variable, group = peptide, data = S, scales = list(y = list(relation = "free")), pch = '.')
+.readAutoQC01 <- function(filename){
+  
+  stopifnot(file.exists(filename))
+  filename |>
+    readr::read_delim(
+      delim = ";",
+      escape_double = FALSE,           
+      col_names = c('filename', 'time', 'peptide', 'AUC', 'APEX', 'FWHM'),
+      col_types = readr::cols(time = readr::col_datetime(format = "%s")),
+      trim_ws = TRUE) -> rv
+  
+  rv$AUC.lg2 <- log(rv$AUC, 2)
+  
+  colnames(rv)[colnames(rv) == "md5"] <- "Md5"
+  colnames(rv)[colnames(rv) == "filename"] <- "File.Name"
+  
+  rv$Instrument <- NA
+  rv |>
+    .assignInstrument(coln = 'File.Name') |>
+    reshape2::melt(id.vars = c("File.Name", "time", "Instrument", "peptide"))
+}
