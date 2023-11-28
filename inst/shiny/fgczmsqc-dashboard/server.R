@@ -69,8 +69,8 @@ function(input, output, session) {
                                    inputfile = file.path(rootdir(), 'autoQC01-fit-apex-auc-fwhm.txt'),
                                    readFUN = .readAutoQC01,
                                    ggplot2FUN = .ggplotAutoQC01,
-                                   title = "autoQC01",
-                                   footer = "We compose the graphs by utilizing rawrr.")
+                                   title = "autoQC01 - Biognosys iRT peptides runs",
+                                   footer = "graphs pre-computed AUC | APEX | FWHM  values by utilizing rawrr (https://bioconductor.org/packages/rawrr/). Of note, only data acquired by Orbitraps are presented.")
   
   output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")

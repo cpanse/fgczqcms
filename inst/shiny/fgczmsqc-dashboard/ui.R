@@ -5,8 +5,11 @@ stopifnot(require(shinydashboard))
 source('module-bfabricInstrumentEvent.R')
 source('module-autoQC03.R')
 
+
 imgBanner <- "graphics/fgcz-header-background.png"
-stopifnot(file.exists(imgBanner))
+imgBanner <- "http://fgcz-ms.uzh.ch/~cpanse/fgcz-cropped.svg"
+# imgBanner <- "/Users/cp/src/gitlab.bfabric.org/proteomics/qc/inst/shiny/fgczmsqc-dashboard/graphics/fgcz-header-background.png"
+#stopifnot(file.exists(imgBanner))
 
 tl <- tagList(
   tags$li(
@@ -19,13 +22,14 @@ tl <- tagList(
 
 
 dashboardPage(
+  skin = "black",
   dashboardHeader(title = "FGCZ MS QC", .list = tl),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line")),
+      menuItem("autoQC01beta", tabName = "autoQC01beta", icon = icon("chart-line")),
       menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line")),
-  menuItem("autoQC01beta", tabName = "autoQC01beta", icon = icon("chart-line"),
-                 badgeLabel = "cp only", badgeColor = "olive"),
+      menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line"),
+                 badgeLabel = "old", badgeColor = "olive"),
       menuItem("summary | status", tabName = "summary", icon = icon("table")),
       hr(),
       htmlOutput("instrument"),
@@ -55,12 +59,12 @@ dashboardPage(
   ), # dashboardSidebar
   dashboardBody(
     tabItems(
-      tabItem(tabName = "autoQC01",
-              fluidRow(h2("autoQC01 - Biognosys iRT peptides runs")),
-              fluidRow(htmlOutput("autoQC01TimeSlider")), 
-              # TODO(cp): can't we call the autoQC01 right from here?
-              # autoQC01UI("autoQC01")
-              fluidRow(htmlOutput("autoQC01"), width = "100%"),
+      tabItem(tabName = "autoQC01beta",
+              tagList(
+                fluidRow(h2("autoQC01 - Biognosys iRT peptides runs")),
+                htmlOutput("autoQC01TimeSlider"),
+                autoQC03UI("__autoQC01__"),
+              )
       ),
       tabItem(tabName = "autoQC03",
               tagList(
@@ -70,11 +74,11 @@ dashboardPage(
                 autoQC03UI("autoQC03-DIA")
               )
       ),
-      tabItem(tabName = "autoQC01beta",
-              tagList(
-                fluidRow(h2("autoQC01 using autoQC03 module")),
-                autoQC03UI("__autoQC01__"),
-              )
+      tabItem(tabName = "autoQC01",
+              fluidRow(h2("autoQC01 - Biognosys iRT peptides runs (old)")),
+              # TODO(cp): can't we call the autoQC01 right from here?
+              # autoQC01UI("autoQC01")
+              fluidRow(htmlOutput("autoQC01"), width = "100%"),
       ),
       tabItem(tabName = "summary",
               fluidRow(
