@@ -250,3 +250,15 @@
     "primary"
   }
 }
+
+.fileStatus <- function(p, f){
+  message(f)
+  if (is.na(f)){
+    "primary"
+  }
+  else if (file.exists(file.path(p, f))){
+    "success"
+  }else{
+    "danger"
+  }
+}

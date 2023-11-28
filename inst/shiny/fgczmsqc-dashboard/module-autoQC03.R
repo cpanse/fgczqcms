@@ -39,17 +39,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, title,
                      warning(paste0("raw file ", vals$fn, " does not exist."))
                    }
                  })
-                 .fileStatus <- function(p, f){
-                   message(f)
-                   if (is.na(f)){
-                     "primary"
-                   }
-                   else if (file.exists(file.path(p, f))){
-                     "success"
-                   }else{
-                     "danger"
-                   }
-                 }
+                 
                  output$hoverInfo <- renderUI({
                    shiny::req(vals$hover)
                    L <- tagList()
