@@ -20,6 +20,7 @@ D                 = $(DZIP:.d.zip=.d)
 MZML              = $(RAW:.raw=.mzML)
 XMLLINT           = $(MZML:.mzML=.xmllint)
 OUTPUT            = $(MZML:.mzML=.diann)
+TIMSTOFOUTPUT     = $(D:.d=.diann)
 
 MSCONVERTOPTS     = chambm/pwiz-skyline-i-agree-to-the-vendor-licenses wine msconvert --mzML --64 --zlib --filter "peakPicking true 1-"
 
@@ -31,6 +32,7 @@ DIANNTEMP     = $(PWD)/temp
 
 
 list:
+	echo $(TIMSTOFOUTPUT)
 	echo $(D)
 	echo $(RAW)
 	echo $(MZMLCHECK)
@@ -41,11 +43,12 @@ help:
 	grep "^## " Makefile
 
 convert: $(MZML)
-diann: $(OUTPUT)
+diann: $(OUTPUT) $(TIMSTOFOUTPUT)
 
 .raw.mzML:
 	docker run -t --network none -w ${PWD} -v ${PWD}:${PWD} -v /scratch/mzML/:/scratch/mzML/ $(MSCONVERTOPTS) $< -o /scratch/mzML && cp -v /scratch/mzML//$(shell basename $< .raw).mzML $@
 
+## TIMSTOF workflow
 .d.zip.d: 
 	unzip $< -d $@
 unzip: $(D)
@@ -80,6 +83,8 @@ dump/autoQC03-diann.txt: dump/autoQC03-diann.input.txt
 
 output: dump/autoQC03-diann.txt
 
+.d.diann:
+	mkdir -p $@ $(DIANNTEMP) && nice -19 $(DIANN) $(DIANNDEFAULTS) --f $< $(DIANNFASTA) --temp $< --temp $(DIANNTEMP) --out $@/diaqc_report.tsv || mv $@ $@.$(NOW).broken
 .mzML.diann:
 	mkdir -p $@ $(DIANNTEMP) && nice -19 $(DIANN) $(DIANNDEFAULTS) --f $< $(DIANNFASTA) --temp $< --temp $(DIANNTEMP) --out $@/diaqc_report.tsv || mv $@ $@.$(NOW).broken
 
