@@ -26,10 +26,11 @@ dashboardPage(
   dashboardHeader(title = "Mass Spec | QC", .list = tl),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("autoQC01beta", tabName = "autoQC01beta", icon = icon("chart-line")),
+      menuItem("autoQC01", tabName = "autoQC01beta", icon = icon("chart-line"),
+        badgeLabel = "under construction", badgeColor = "yellow"),
       menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line")),
       menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line"),
-                 badgeLabel = "old", badgeColor = "olive"),
+                 badgeLabel = "deprecated module", badgeColor = "olive"),
       menuItem("summary | status", tabName = "summary", icon = icon("table")),
       hr(),
       htmlOutput("instrument"),
