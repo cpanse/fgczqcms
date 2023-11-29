@@ -183,13 +183,17 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      .missing()
                      return()
                    }
-                   
+
+                   ggplot2FUN(dataFiltered(), input$variables) -> gp
                    
                    if (filterValues$useBFabric){
-                     ggplot2FUN( dataFiltered(), input$variables, filterValues$useBFabric, BFabric$bfabricInstrumentEventsFiltered()$time)
-                   }else{
-                     ggplot2FUN( dataFiltered(), input$variables)
-                   }}, res = 96)
+                     gp + ggplot2::geom_vline(xintercept =  BFabric$bfabricInstrumentEventsFiltered()$time,
+                                              linetype = "dashed", 
+                                              color = "red",
+                                              size = 1) -> gp
+                   }
+                   gp
+                  }, res = 96)
                  return(data)
                })
 }
