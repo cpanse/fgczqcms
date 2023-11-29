@@ -51,7 +51,7 @@ function(input, output, session) {
                                 inputfile = file.path(rootdir(), "comet.RData"),
                                 readFUN = .readComet,
                                 ggplot2FUN = .ggplotAutoQC03,
-                                title = "Data-dependent acquisition",
+                                title = "DDA (Data-dependent acquisition)",
                                 footer = "Running Comet (refer to https://github.com/UWPR/Comet) and utilizing UP000005640 FASTA as input generates the graphs.")
   
   autoQC03DIA <- autoQC03Server("autoQC03-DIA", filterValues = vals,
@@ -59,7 +59,7 @@ function(input, output, session) {
                                 inputfile = file.path(rootdir(), "autoQC03-diann.txt"),
                                 readFUN = .readDIANN,
                                 ggplot2FUN = .ggplotAutoQC03,
-                                title = "Data-independent acquisition",
+                                title = "DIA (Data-independent acquisition)",
                                 footer = "We compose the graphs by utilizing DIA-NN (check it out at https://github.com/vdemichev/DiaNN) and incorporating UP000005640 FASTA as input. We convert Orbitrap raw  files prior to mzML, employing ProteoWizard through  Docker and wine.")
   
   

@@ -28,7 +28,7 @@ dashboardPage(
     sidebarMenu(
       menuItem("autoQC01", tabName = "autoQC01beta", icon = icon("chart-line"),
         badgeLabel = "under construction", badgeColor = "yellow"),
-      menuItem("autoQC03", tabName = "autoQC03", icon = icon("chart-line")),
+      menuItem("autoQC03 - DDA | DIA", tabName = "autoQC03", icon = icon("chart-line")),
       menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line"),
                  badgeLabel = "deprecated module", badgeColor = "olive"),
       menuItem("summary | status", tabName = "summary", icon = icon("table")),
@@ -62,14 +62,12 @@ dashboardPage(
     tabItems(
       tabItem(tabName = "autoQC01beta",
               tagList(
-                fluidRow(h2("autoQC01 - Biognosys iRT peptides runs")),
                 htmlOutput("autoQC01TimeSlider"),
                 autoQC03UI("__autoQC01__"),
               )
       ),
       tabItem(tabName = "autoQC03",
               tagList(
-                fluidRow(h2("autoQC03 - runs")),
                 htmlOutput("cometTimeSlider"),
                 autoQC03UI("autoQC03-DDA"),
                 autoQC03UI("autoQC03-DIA")

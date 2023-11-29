@@ -9,13 +9,13 @@
     ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)
 }
 
-.ggplotAutoQC03 <- function(data = NULL, variables = NULL){
+.ggplotAutoQC03 <- function(data = NULL, variables = NULL, alpha = 0.7){
   .ggplot(data, variables) -> gp
   
   if ("scanType" %in% names(data)){
     gp +
-      ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
-      ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
+      ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = alpha) +
+      ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = alpha) -> gp
     
   }else{
     gp +
@@ -25,9 +25,9 @@
   gp
 }
 
-.ggplotAutoQC01 <- function(data = NULL, variables = NULL){
+.ggplotAutoQC01 <- function(data = NULL, variables = NULL, alpha = 0.7){
   .ggplot(data, variables) +
-    ggplot2::geom_point(ggplot2::aes(time, value, colour = peptide), alpha = 0.4) +
-    ggplot2::geom_line(ggplot2::aes(time, value, colour = peptide), alpha = 0.4) -> gp
+    ggplot2::geom_point(ggplot2::aes(time, value, colour = peptide), alpha = alpha) +
+    ggplot2::geom_line(ggplot2::aes(time, value, colour = peptide), alpha = alpha) -> gp
   gp
 }
