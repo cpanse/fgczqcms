@@ -100,6 +100,7 @@ dump/autoQC03-diann.txt: dump/autoQC03-diann.input.txt Makefile.DIANN
 	>> $@
 
 output: dump/autoQC03-diann.txt
+	(cat -n $< | head -n 4  ; echo "..."; cat -n $< | tail -n 5) | cut -d";" -f1,5,6,7 | tr ";" "\t" 
 
 ## runs DIANN
 ## for Bruker TIMSTOF
