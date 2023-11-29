@@ -2,6 +2,7 @@
 
 
 .readDIANN <- function(filename){
+  message(paste0("reading ", filename))
   filename |>
     readr::read_delim(
       delim = ";",

@@ -10,9 +10,18 @@
 }
 
 .ggplotAutoQC03 <- function(data = NULL, variables = NULL){
-  .ggplot(data, variables) +
-    ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
-    ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
+  .ggplot(data, variables) -> gp
+  
+  if ("scanType" %in% names(data)){
+    gp +
+      ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) +
+      ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.4) -> gp
+    
+  }else{
+    gp +
+      ggplot2::geom_point(ggplot2::aes(time, value), alpha = 1.0) +
+      ggplot2::geom_line(ggplot2::aes(time, value), alpha = 1.0) -> gp
+  }
   gp
 }
 

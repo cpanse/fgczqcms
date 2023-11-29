@@ -94,7 +94,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    dataVariables() %in% c('nConfidentProteins',
                                           'nConfidentPeptides',
                                           'nMS2', 'Precursors.Identified',
-                                          'Proteins.Identified', 'FWHM.RT', 'AUC.lg2') |> 
+                                          'Proteins.Identified', 'AUC.lg2') |> 
                      which() -> defaulVariablesIdx 
                    
                    shinydashboard::box(
@@ -142,18 +142,24 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    if (filterValues$useBFabric){
                      tl <- append(tagList(htmlOutput(ns("instrumentEvents"))), tl)
                    }
-                   tagList(
-                     shinydashboard::box(
-                       title = paste0(title, " plots - mtime: ", file.mtime(inputfile) |> strftime("%a %F %T")),
-                       footer = footer,
-                       status = .status(inputfile),
-                       solidHeader = TRUE,
-                       collapsible = TRUE,
-                       width = 12,
-                       tagList(tl,
-                               htmlOutput(NS(id, "rawrrEnableUI"))
-                       ),
-                     ),
+                   
+                   
+                   if (filterValues$instrument %in% c("TIMSTOF_1")){
+                     ## TODO(cp): make a module module-tims.R
+                     tl 
+                   }else{
+                     tl <- tagList(tl, htmlOutput(NS(id, "rawrrEnableUI")))
+                   }
+                   
+                   
+                   shinydashboard::box(
+                     title = paste0(title, " plots - mtime: ", file.mtime(inputfile) |> strftime("%a %F %T")),
+                     footer = footer,
+                     status = .status(inputfile),
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     width = 12,
+                     tl
                    )
                  })
                  ## render instrumentEvents
@@ -183,7 +189,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      .missing()
                      return()
                    }
-
+                   
                    ggplot2FUN(dataFiltered(), input$variables) -> gp
                    
                    if (filterValues$useBFabric){
@@ -193,7 +199,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                                               size = 1) -> gp
                    }
                    gp
-                  }, res = 96)
+                 }, res = 96)
                  return(data)
                })
 }
