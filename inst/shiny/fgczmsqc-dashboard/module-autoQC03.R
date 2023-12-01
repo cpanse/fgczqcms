@@ -124,12 +124,25 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    tl <- tagList(
                      fluidRow(
                        column(6,
-                              htmlOutput(ns("variable")),
-                       ),
+                              tagList(
+                                htmlOutput(ns("variable")),
+                                fluidRow(
+                                  shinydashboard::box(footer="Select modules to run when clicking",
+                                                      tagList(
+                                                        column(4, checkboxInput(ns('rawrr'), 'rawrr', value = TRUE)),
+                                                        column(4, checkboxInput(ns('rawDiag'), 'rawDiag', value = FALSE)),
+                                                        column(4, checkboxInput(ns('timsR'), 'timsR', value = FALSE)),
+                                                        
+                                                      ),
+                                                      status = "primary",
+                                                      solidHeader = TRUE,
+                                                      width = 12,
+                                  )
+                                )
+                              )),
                        column(6,
                               htmlOutput(ns("hoverInfo"))
                        ),
-                       
                        shinydashboard::box(plotOutput(ns("plot"),
                                                       hover = hoverOpts(NS(id, "hoverInfo"), delay = 200, nullOutside = TRUE),
                                                       click = NS(id, "plotClick")),
@@ -138,7 +151,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                                            solidHeader = TRUE,
                                            collapsible = FALSE,
                                            width = 12)
-                     )) # tagList
+                     )
+                   )# tagList
                    if (filterValues$useBFabric){
                      tl <- append(tagList(htmlOutput(ns("instrumentEvents"))), tl)
                    }
@@ -148,10 +162,14 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      ## TODO(cp): make a module module-tims.R
                      tl 
                    }else{
-                     tl <- tagList(tl, htmlOutput(NS(id, "rawrrEnableUI")))
+                     ## input$rawrr
+                     if (TRUE){
+                       tl <- tagList(tl, htmlOutput(NS(id, "rawrrEnableUI")))
+                     }
+                     if (TRUE){
+                       #tl <- tagList(tl, htmlOutput(NS(id, "rawDiagEnableUI")))
+                     }
                    }
-                   
-                   
                    shinydashboard::box(
                      title = paste0(title, " plots - mtime: ", file.mtime(inputfile) |> strftime("%a %F %T")),
                      footer = footer,

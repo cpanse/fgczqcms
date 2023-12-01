@@ -3,10 +3,34 @@
 .ggplot <- function(data = NULL, variables = NULL){
   stopifnot(!is.null(data),
             !is.null(variables))
+  
+  #q <- quantile(y, probs = c(0.25, 0.50, 0.75), na.rm = TRUE)
+  
+    
   data |> 
-    subset(variable %in% variables) |> 
+    subset(variable %in% variables) -> data 
+  
+  hlineMedian <- aggregate(value ~ Instrument * variable, FUN = median, data = data)
+  irqL <- aggregate(value ~ Instrument * variable, data = data,
+                    FUN = function(x){
+                      q <- quantile(x, c(0.25, 0.75));
+                      irq.low=q[1] - 1.5 * diff(q)
+                    })
+  irqU <- aggregate(value ~ Instrument * variable, data = data,
+                    FUN = function(x){
+                      q <- quantile(x, c(0.25, 0.75));
+                      q[2]  + 1.5 * diff(q)
+                    })
+  
+  print(irqL)
+  data |> 
     ggplot2::ggplot(ggplot2::aes(time, value)) +
-    ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1)
+    ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1) +
+    ggplot2::geom_hline(data = hlineMedian, ggplot2::aes(yintercept = value), col = 'darkgreen') +
+    ggplot2::geom_hline(data = irqL, ggplot2::aes(yintercept = value), colour = 'grey') +
+    ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey') 
+    #ggplot2::geom_vline(xintercept = median(value), colour = 'green', alpha = 0.5)
+  
 }
 
 .ggplotAutoQC03 <- function(data = NULL, variables = NULL, alpha = 0.7){
@@ -15,7 +39,7 @@
   if ("scanType" %in% names(data)){
     gp +
       ggplot2::geom_point(ggplot2::aes(time, value, colour = scanType), alpha = alpha) +
-      ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = alpha) -> gp
+      ggplot2::geom_line(ggplot2::aes(time, value, colour = scanType), alpha = 0.5 * alpha) -> gp
     
   }else{
     gp +
