@@ -4,7 +4,7 @@ stopifnot(require(shinydashboard))
 
 source('module-bfabricInstrumentEvent.R')
 source('module-autoQC03.R')
-
+source('helpers.R')
 
 imgBanner <- "graphics/fgcz-header-background.png"
 imgBanner <- "http://fgcz-ms.uzh.ch/~cpanse/fgcz-cropped.svg"
