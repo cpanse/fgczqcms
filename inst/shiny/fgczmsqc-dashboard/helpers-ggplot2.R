@@ -10,7 +10,12 @@
   data |> 
     subset(variable %in% variables) -> data 
   
-  hlineMedian <- aggregate(value ~ Instrument * variable, FUN = median, data = data)
+  if ('peptide' %in% colnames(data)){
+    hlineMedian <- aggregate(value ~ peptide * Instrument * variable, FUN = median, data = data)
+  }else{
+    hlineMedian <- aggregate(value ~ Instrument * variable, FUN = median, data = data)
+  }
+  
   irqL <- aggregate(value ~ Instrument * variable, data = data,
                     FUN = function(x){
                       q <- quantile(x, c(0.25, 0.75));
