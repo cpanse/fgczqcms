@@ -48,7 +48,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      L <- HTML("Hover over a point to see file information. <br>
                                Click on a point to trace peptides and gather raw file header information.")
                    }else{
-                     L <- renderTable(t(vals$hover[, c('File.Name', 'time')]), rownames = T, colnames = F)
+                     L <- renderTable(t(vals$hover[, c('File.Name', 'time')]),
+                                      rownames = T, colnames = F)
                    }
                    
                    shinydashboard::box(title = 'File Information',
@@ -61,7 +62,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                  })
                  observeEvent(input$hoverInfo, {
                    if(!is.null(input$hoverInfo)){
-                     np <- nearPoints(data(), input$hoverInfo, xvar = "time", yvar = "value")
+                     np <- nearPoints(data(), input$hoverInfo, xvar = "time",
+                                      yvar = "value")
                      
                      cat("Hover (throttled):\n")
                      str(np$File.Name[1])
@@ -70,7 +72,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                  })
                  ## observeEvent =================
                  observeEvent(input$plotClick, {
-                   np <- nearPoints(data(), input$plotClick, xvar = "time", yvar = "value")
+                   np <- nearPoints(data(), input$plotClick, xvar = "time",
+                                    yvar = "value")
                    
                    message(paste0("plotClick: ", np$filename, collapse = " | "))
                    
@@ -112,13 +115,30 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                  })
                  dataFiltered <- reactive({
                    shiny::req(data())
-                   #message(paste0("nrow data(): ", nrow(data())))
+                   
                    filter <- data()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < data()$time & data()$time < filterValues$timeMax 
-                   #data()$variable %in% input$Variables 
                    
-                   data()[filter,]
+                  if ("peptide" %in% colnames(data())){
+                   #  message("filtering peptides ...")
+                     filter <- data()$Instrument %in% filterValues$instrument &
+                       filterValues$timeMin < data()$time & data()$time < filterValues$timeMax &
+                      data()$peptide %in% filterValues$peptide
+                   }
+                   #S<-data()
+                   #base::save(S, file = '/tmp/RRR.RData')
+                   data()[filter, ] 
                  })
+                 
+                 nFacets <- reactive({
+                   n <- 1
+                   if ('peptide' %in% colnames(dataFiltered())){
+                     n <- n * length(filterValues$peptide)
+                   }
+                   message("nFacets: ", n)
+                  n
+                 })
+                 
                  output$ui <- renderUI({
                    
                    tl <- tagList(
@@ -143,8 +163,10 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                        column(6,
                               htmlOutput(ns("hoverInfo"))
                        ),
-                       shinydashboard::box(plotOutput(ns("plot"),
-                                                      hover = hoverOpts(NS(id, "hoverInfo"), delay = 200, nullOutside = TRUE),
+                       shinydashboard::box(plotOutput(ns("plot"), 
+                                                      height = 300 * nFacets(),
+                                                      hover = hoverOpts(NS(id, "hoverInfo"),
+                                                                        delay = 200, nullOutside = TRUE),
                                                       click = NS(id, "plotClick")),
                                            
                                            status = "primary",
@@ -157,6 +179,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      tl <- append(tagList(htmlOutput(ns("instrumentEvents"))), tl)
                    }
                    
+                 
                    
                    if (filterValues$instrument %in% c("TIMSTOF_1")){
                      ## TODO(cp): make a module module-tims.R

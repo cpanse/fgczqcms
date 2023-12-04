@@ -28,7 +28,9 @@ function(input, output, session) {
                          timeMin = (Sys.time() - (7 * 3600 * 24)),
                          timeMax = Sys.time(),
                          instrument = NULL,
-                         useBFabric = FALSE)
+                         useBFabric = FALSE,
+                         peptide = c('LGGNEQVTR', 'YILAGVENSK', 'DGLDAASYYAPVR',
+                                     'GTFIIDPAAVIR'))
   
   
   rootdir <- reactive({
@@ -46,7 +48,8 @@ function(input, output, session) {
   autoQC01 <- autoQC01Server("autoQC01", filterValues = vals, BFabric = BFabric,
                              inputfile = file.path(rootdir(), 'autoQC01-fit-apex-auc-fwhm.txt'))
   
-  autoQC03DDA <- autoQC03Server("autoQC03-DDA", filterValues = vals,
+  autoQC03DDA <- autoQC03Server("autoQC03-DDA",
+                                filterValues = vals,
                                 BFabric = BFabric,
                                 inputfile = file.path(rootdir(), "comet.RData"),
                                 readFUN = .readComet,
@@ -54,7 +57,8 @@ function(input, output, session) {
                                 title = "DDA (Data-dependent acquisition)",
                                 footer = "Running Comet (refer to https://github.com/UWPR/Comet) and utilizing UP000005640 FASTA as input generates the graphs.")
   
-  autoQC03DIA <- autoQC03Server("autoQC03-DIA", filterValues = vals,
+  autoQC03DIA <- autoQC03Server("autoQC03-DIA",
+                                filterValues = vals,
                                 BFabric = BFabric,
                                 inputfile = file.path(rootdir(), "autoQC03-diann.txt"),
                                 readFUN = .readDIANN,
@@ -64,7 +68,8 @@ function(input, output, session) {
   
   
   
-  autoQC01alpha <- autoQC03Server("__autoQC01__", filterValues = vals,
+  autoQC01alpha <- autoQC03Server("__autoQC01__",
+                                  filterValues = vals,
                                    BFabric = BFabric,
                                    inputfile = file.path(rootdir(), 'autoQC01-fit-apex-auc-fwhm.txt'),
                                    readFUN = .readAutoQC01,
@@ -113,6 +118,9 @@ function(input, output, session) {
   })
   
 
+  observeEvent({input$peptide}, {
+    vals$peptide <- input$peptide
+  })
   observeEvent({ input$useBfabric }, {
     vals$useBFabric <- input$useBfabric
   })

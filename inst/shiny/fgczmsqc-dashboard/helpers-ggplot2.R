@@ -25,12 +25,19 @@
   print(irqL)
   data |> 
     ggplot2::ggplot(ggplot2::aes(time, value)) +
-    ggplot2::facet_wrap(. ~  Instrument * variable, scales="free_y", ncol = 1) +
     ggplot2::geom_hline(data = hlineMedian, ggplot2::aes(yintercept = value), col = 'darkgreen') +
     ggplot2::geom_hline(data = irqL, ggplot2::aes(yintercept = value), colour = 'grey') +
-    ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey') 
-    #ggplot2::geom_vline(xintercept = median(value), colour = 'green', alpha = 0.5)
-  
+    ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey')  -> gp
+    
+    
+  if ('peptide' %in% colnames(data)){
+    gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
+      ggplot2::theme(legend.position = "none") -> gp
+  }else{
+    gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
+  }
+
+  gp
 }
 
 .ggplotAutoQC03 <- function(data = NULL, variables = NULL, alpha = 0.7){

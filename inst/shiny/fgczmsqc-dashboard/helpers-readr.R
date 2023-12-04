@@ -79,5 +79,7 @@
   rv$Instrument <- NA
   rv |>
     .assignInstrument(coln = 'File.Name') |>
-    reshape2::melt(id.vars = c("File.Name", "time", "Instrument", "peptide"))
+    reshape2::melt(id.vars = c("File.Name", "time", "Instrument", "peptide")) -> rv
+  rv$variable <- as.character(rv$variable)
+  rv
 }
