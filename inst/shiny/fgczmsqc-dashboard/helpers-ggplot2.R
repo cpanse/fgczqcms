@@ -12,6 +12,8 @@
   
   if ('peptide' %in% colnames(data)){
     hlineMedian <- aggregate(value ~ peptide * Instrument * variable, FUN = median, data = data)
+  }else if ('scanType' %in% colnames(data)){
+    hlineMedian <- aggregate(value ~ scanType * Instrument * variable, FUN = median, data = data)
   }else{
     hlineMedian <- aggregate(value ~ Instrument * variable, FUN = median, data = data)
   }
@@ -37,6 +39,9 @@
     
   if ('peptide' %in% colnames(data)){
     gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
+      ggplot2::theme(legend.position = "none") -> gp
+  }else if ('scanType' %in% colnames(data)){
+    gp + ggplot2::facet_grid(scanType ~  variable * Instrument, scales = "free_y") +
       ggplot2::theme(legend.position = "none") -> gp
   }else{
     gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
