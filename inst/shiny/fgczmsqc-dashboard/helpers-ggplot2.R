@@ -63,12 +63,12 @@
       ggplot2::geom_point(ggplot2::aes(time, value), alpha = 1.0) +
       ggplot2::geom_line(ggplot2::aes(time, value), alpha = 1.0) -> gp
   }
-  gp
+  gp + ggplot2::theme_light()
 }
 
 .ggplotAutoQC01 <- function(data = NULL, variables = NULL, alpha = 0.7){
   .ggplot(data, variables) +
     ggplot2::geom_point(ggplot2::aes(time, value, colour = peptide), alpha = alpha) +
     ggplot2::geom_line(ggplot2::aes(time, value, colour = peptide), alpha = alpha) -> gp
-  gp
+  gp + ggplot2::theme_light()
 }
