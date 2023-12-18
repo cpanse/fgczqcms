@@ -7,6 +7,7 @@ stopifnot(require(readr),
           require(reshape2),
           require(shinydashboard),
           require(lattice),
+          require(rawDiag),
           require(rawrr))
 
 source('helpers-ggplot2.R')

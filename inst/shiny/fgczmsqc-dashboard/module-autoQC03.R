@@ -15,7 +15,7 @@ autoQC03UI <- function(id){
 #' 
 #' @description
 #' handles DDA and DIA 
-#' 
+#' @importFrom rawDiag rawDiagServer
 #'
 #' @param id 
 #' @param filterValues time and instrument information
@@ -28,9 +28,16 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    config <- configServer("config2")
                    config$rootdirraw
                  })
-                 vals <- reactiveValues(fn = NA, mZ = .iRTmz(), hover = NA)
+                 
+                 vals <- reactiveValues(fn = NA,
+                                        rawfile = NULL,
+                                        mZ = .iRTmz(),
+                                        hover = NA,
+                                        userawrr = FALSE,
+                                        userawDiag = FALSE)
                  
                  rawrrServer("rawrr-autoQC03", vals) 
+                 rawDiag::rawDiagServer("rawDiag-autoQC03", vals)
                  
                  output$rawrrEnableUI <- renderUI({
                    shiny::req(vals$fn)
@@ -40,6 +47,19 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      warning(paste0("raw file ", vals$fn, " does not exist."))
                    }
                  })
+                 
+                 output$rawDiagEnableUI <- renderUI({
+                   shiny::req(vals$fn)
+                   if (file.exists(vals$fn)){
+                     column(11, offset = 1,
+                            fluidRow(
+                              rawDiag::rawDiagUI(NS(id, "rawDiag-autoQC03"))
+                            ))
+                   }else{
+                     warning(paste0("raw file ", vals$fn, " does not exist."))
+                   }
+                 })
+                 
                  
                  output$hoverInfo <- renderUI({
                    shiny::req(vals$hover)
@@ -60,6 +80,16 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                                        width = 12,
                                        height = 150)
                  })
+                 
+                 observeEvent(input$rawrr, {
+                   vals$userawrr <- input$rawrr
+                   message("vals$rawrr: ", vals$userawrr)
+                 })
+                 
+                 observeEvent(input$rawDiag,{
+                   vals$userawDiag <- input$rawDiag
+                   message("vals$rawDiag: ", vals$userawDiag)
+                 })
                  observeEvent(input$hoverInfo, {
                    if(!is.null(input$hoverInfo)){
                      np <- nearPoints(data(), input$hoverInfo, xvar = "time",
@@ -79,6 +109,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    
                    
                    vals$fn <- file.path(rootdirraw(), np$File.Name[1])
+                   ## the rawDiag module will read the rawfile
+                   vals$rawfile <- vals$fn
                  })
                  
                  
@@ -119,11 +151,11 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    filter <- data()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin < data()$time & data()$time < filterValues$timeMax 
                    
-                  if ("peptide" %in% colnames(data())){
-                   #  message("filtering peptides ...")
+                   if ("peptide" %in% colnames(data())){
+                     #  message("filtering peptides ...")
                      filter <- data()$Instrument %in% filterValues$instrument &
                        filterValues$timeMin < data()$time & data()$time < filterValues$timeMax &
-                      data()$peptide %in% filterValues$peptide
+                       data()$peptide %in% filterValues$peptide
                    }
                    #S<-data()
                    #base::save(S, file = '/tmp/RRR.RData')
@@ -136,7 +168,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      n <- n * length(filterValues$peptide)
                    }
                    message("nFacets: ", n)
-                  n
+                   n
                  })
                  
                  output$ui <- renderUI({
@@ -149,8 +181,8 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                                 fluidRow(
                                   shinydashboard::box(footer="Select modules to run when clicking",
                                                       tagList(
-                                                        column(4, checkboxInput(ns('rawrr'), 'rawrr', value = TRUE)),
-                                                        column(4, checkboxInput(ns('rawDiag'), 'rawDiag', value = FALSE)),
+                                                        column(4, checkboxInput(ns('rawrr'), 'rawrr', value = vals$userawrr)),
+                                                        column(4, checkboxInput(ns('rawDiag'), 'rawDiag', value = vals$userawDiag)),
                                                         column(4, checkboxInput(ns('timsR'), 'timsR', value = FALSE)),
                                                         
                                                       ),
@@ -179,18 +211,26 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                      tl <- append(tagList(htmlOutput(ns("instrumentEvents"))), tl)
                    }
                    
-                 
+                   
                    
                    if (filterValues$instrument %in% c("TIMSTOF_1")){
                      ## TODO(cp): make a module module-tims.R
                      tl 
                    }else{
                      ## input$rawrr
-                     if (TRUE){
+                     if (vals$userawrr){
                        tl <- tagList(tl, htmlOutput(NS(id, "rawrrEnableUI")))
                      }
-                     if (TRUE){
-                       #tl <- tagList(tl, htmlOutput(NS(id, "rawDiagEnableUI")))
+                     if (vals$userawDiag){
+                       tl <- tagList(tl, 
+                                     shinydashboard::box(title = "rawDiag module",
+                                                         status = "primary",
+                                                         solidHeader = TRUE,
+                                                         collapsible = TRUE,
+                                                         width = 12,
+                                                         offset = 0,
+                                                         htmlOutput(NS(id, "rawDiagEnableUI"))
+                                     ))
                      }
                    }
                    shinydashboard::box(
