@@ -167,6 +167,9 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    if ('peptide' %in% colnames(dataFiltered())){
                      n <- n * length(filterValues$peptide)
                    }
+                   if ('scanType' %in% colnames(dataFiltered())){
+                     n <- n * length(unique(dataFiltered()$scanType))
+                   }
                    message("nFacets: ", n)
                    n
                  })
