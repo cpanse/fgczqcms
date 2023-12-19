@@ -52,6 +52,7 @@
       ggh4x::facet_grid2(. ~   variable * Instrument, scales = "free_y", independent = "y") -> gp
     }
   }else
+    warning("install package 'ggh4x' to free y-axis scales.")
     if ('peptide' %in% colnames(data)){
       gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
         ggplot2::theme(legend.position = "none") -> gp
