@@ -1,5 +1,8 @@
 #R
 ## Christian Panse <cp@fgcz.ethz.ch> November 2023
+library(shinylogs)
+use_tracking()
+
 stopifnot(require(shinydashboard))
 
 source('module-bfabricInstrumentEvent.R')

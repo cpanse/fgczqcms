@@ -1,6 +1,7 @@
 #R
 ## Christian Panse <cp@fgcz.ethz.ch> 2023-11-09
 ## server
+library(shinylogs)
 
 # requirements ===========
 stopifnot(require(readr),
@@ -21,7 +22,8 @@ source('module-rawrr.R')
 
 # define server logic ============
 function(input, output, session) {
- 
+  track_usage(storage_mode = store_json(path = "logs-qc/"))
+  
   #  reactives =============
   
   ## >> reactiveValues defined here ##################
