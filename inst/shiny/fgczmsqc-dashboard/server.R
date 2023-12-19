@@ -28,6 +28,8 @@ function(input, output, session) {
   vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
                          timeMin = (Sys.time() - (7 * 3600 * 24)),
                          timeMax = Sys.time(),
+                         heightPx = 400,
+                         addSmoothing = FALSE,
                          instrument = NULL,
                          useBFabric = FALSE,
                          peptide = c('LGGNEQVTR', 'YILAGVENSK', 'DGLDAASYYAPVR',
@@ -104,9 +106,7 @@ function(input, output, session) {
     
     iRTmz
   })
-  
-  
-  
+
   ####### instruments -----------
   instruments <- reactive({
     names(.getInstruments())
@@ -121,6 +121,13 @@ function(input, output, session) {
     NULL
   })
   
+  observeEvent({ input$addSmoothing }, {
+    vals$addSmoothing <- input$addSmoothing
+  })
+  
+  observeEvent({ input$heightPx }, {
+    vals$heightPx <- as.integer(input$heightPx)
+  })
 
   observeEvent({input$peptide}, {
     vals$peptide <- input$peptide
@@ -214,7 +221,8 @@ function(input, output, session) {
                   value = c(vals$timeMin, vals$timeMax),
                   timeFormat = "%F",
                   step = 3600 * 24,
-                  width = "95%"), footer = "choose time range of autoQC01 files.", width = 12)
+                  width = "95%"),
+      footer = "choose time range of autoQC01 files.", width = 12)
   })
   
   ## TODO(cp): rename to autoQC03TimeSlider

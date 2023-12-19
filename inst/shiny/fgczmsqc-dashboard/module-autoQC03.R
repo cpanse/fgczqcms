@@ -178,7 +178,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                  })
                  
                  output$ui <- renderUI({
-                   
+                   # shiny::req(vals$heightPx)
                    tl <- tagList(
                      fluidRow(
                        column(6,
@@ -202,7 +202,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                               htmlOutput(ns("hoverInfo"))
                        ),
                        shinydashboard::box(plotOutput(ns("plot"), 
-                                                      height = 300 * nFacets(),
+                                                      height = filterValues$heightPx * nFacets(),
                                                       hover = hoverOpts(NS(id, "hoverInfo"),
                                                                         delay = 200, nullOutside = TRUE),
                                                       click = NS(id, "plotClick")),
@@ -277,6 +277,15 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                                               color = "red",
                                               size = 1) -> gp
                    }
+                   
+                   if (filterValues$addSmoothing){
+                     gp +
+                       ggplot2::geom_line(stat = "smooth",
+                                          method= "gam",
+                                          formula = y ~ s(x, bs ="cs"),
+                                          colour = "deepskyblue3", se = FALSE) -> gp
+                   }
+                  
                    gp
                  }, res = 96)
                  return(data)

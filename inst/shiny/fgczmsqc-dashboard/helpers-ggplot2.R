@@ -22,6 +22,19 @@
   gp
 }
 
+.defaultFacets <- function(gp, data){
+  warning("install package 'ggh4x' to free y-axis scales.")
+  if ('peptide' %in% colnames(data)){
+    gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
+      ggplot2::theme(legend.position = "none") -> gp
+  }else if ('scanType' %in% colnames(data)){
+    gp + ggplot2::facet_grid(scanType ~  variable * Instrument, scales = "free_y") +
+      ggplot2::theme(legend.position = "none") -> gp
+  }else{
+    gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
+  }
+}
+
 .ggplot <- function(data = NULL, variables = NULL){
 
   stopifnot(!is.null(data),
@@ -43,6 +56,11 @@
                       q <- quantile(x, c(0.25, 0.75));
                       irq.low=q[1] - 1.5 * diff(q)
                     })
+  
+  ## remove values less equal 0
+  irqL |> 
+    subset(irqL$value > 0) -> irqL
+  
   irqU <- aggregate(value ~ Instrument * variable, data = data,
                     FUN = function(x){
                       q <- quantile(x, c(0.25, 0.75));
@@ -58,16 +76,7 @@
   if (require("ggh4x")){
     .ggh4x(gp, data) -> gp
   }else{
-    warning("install package 'ggh4x' to free y-axis scales.")
-    if ('peptide' %in% colnames(data)){
-      gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
-        ggplot2::theme(legend.position = "none") -> gp
-    }else if ('scanType' %in% colnames(data)){
-      gp + ggplot2::facet_grid(scanType ~  variable * Instrument, scales = "free_y") +
-        ggplot2::theme(legend.position = "none") -> gp
-    }else{
-      gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
-    }
+    .defaultFacets(gp, data) -> gp
   }
   
   gp
