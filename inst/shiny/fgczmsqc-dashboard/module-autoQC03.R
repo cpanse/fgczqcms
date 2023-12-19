@@ -51,16 +51,19 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                  output$rawDiagEnableUI <- renderUI({
                    shiny::req(vals$fn)
                    if (file.exists(vals$fn)){
-                     column(11, offset = 1,
-                            fluidRow(
-                              rawDiag::rawDiagUI(NS(id, "rawDiag-autoQC03"))
-                            ))
+                     shinydashboard::box(title = "rawDiag module",
+                                         status = "primary",
+                                         solidHeader = TRUE,
+                                         collapsible = TRUE,
+                                         width = 12,
+                                         offset = 0,
+                                         rawDiag::rawDiagUI(NS(id, "rawDiag-autoQC03"))
+                     )
                    }else{
                      warning(paste0("raw file ", vals$fn, " does not exist."))
                    }
                  })
-                 
-                 
+
                  output$hoverInfo <- renderUI({
                    shiny::req(vals$hover)
                    L <- tagList()
@@ -225,15 +228,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                        tl <- tagList(tl, htmlOutput(NS(id, "rawrrEnableUI")))
                      }
                      if (vals$userawDiag){
-                       tl <- tagList(tl, 
-                                     shinydashboard::box(title = "rawDiag module",
-                                                         status = "primary",
-                                                         solidHeader = TRUE,
-                                                         collapsible = TRUE,
-                                                         width = 12,
-                                                         offset = 0,
-                                                         htmlOutput(NS(id, "rawDiagEnableUI"))
-                                     ))
+                       tl <- tagList(tl, htmlOutput(NS(id, "rawDiagEnableUI")))
                      }
                    }
                    shinydashboard::box(
