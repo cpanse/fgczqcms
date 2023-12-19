@@ -37,18 +37,35 @@
     ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey')  -> gp
     
     
-  if ('peptide' %in% colnames(data)){
-    gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
-      ggplot2::theme(legend.position = "none") -> gp
-  }else if ('scanType' %in% colnames(data)){
-    gp + ggplot2::facet_grid(scanType ~  variable * Instrument, scales = "free_y") +
-      ggplot2::theme(legend.position = "none") -> gp
-  }else{
-    gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
-  }
+  
+  if (require("ggh4x")){
+    if ('peptide' %in% colnames(data)){
+      gp +
+        ggh4x::facet_grid2(peptide ~  variable * Instrument, scales = "free_y", independent = "y") +
+        ggplot2::theme(legend.position = "none") -> gp
+    }else if ('scanType' %in% colnames(data)){
+      gp +
+        ggh4x::facet_grid2(scanType ~  variable * Instrument, scales = "free_y", independent = "y") +
+        ggplot2::theme(legend.position = "none") -> gp
+    }else{
+      gp + 
+      ggh4x::facet_grid2(. ~   variable * Instrument, scales = "free_y", independent = "y") -> gp
+    }
+  }else
+    if ('peptide' %in% colnames(data)){
+      gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
+        ggplot2::theme(legend.position = "none") -> gp
+    }else if ('scanType' %in% colnames(data)){
+      gp + ggplot2::facet_grid(scanType ~  variable * Instrument, scales = "free_y") +
+        ggplot2::theme(legend.position = "none") -> gp
+    }else{
+      gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
+    }
 
   gp
 }
+
+
 
 .ggplotAutoQC03 <- function(data = NULL, variables = NULL, alpha = 0.7){
   .ggplot(data, variables) -> gp
