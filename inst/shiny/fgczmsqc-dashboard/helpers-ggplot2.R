@@ -1,12 +1,32 @@
 #R
 ## some ggplot2 templates for autoQC03 plots
+
+
+.ggh4x <- function(gp, data){
+  message("using 'ggh4x' package ...")
+  if ('peptide' %in% colnames(data)){
+    gp +
+      ggh4x::facet_grid2(peptide ~ variable * Instrument,
+                         scales = "free_y", independent = "y") +
+      ggplot2::theme(legend.position = "none") -> gp
+  }else if ('scanType' %in% colnames(data)){
+    gp +
+      ggh4x::facet_grid2(scanType ~ variable * Instrument,
+                         scales = "free_y", independent = "y") +
+      ggplot2::theme(legend.position = "none") -> gp
+  }else{
+    gp + 
+      ggh4x::facet_grid2(. ~ variable * Instrument,
+                         scales = "free_y", independent = "y") -> gp
+  }
+  gp
+}
+
 .ggplot <- function(data = NULL, variables = NULL){
+
   stopifnot(!is.null(data),
             !is.null(variables))
   
-  #q <- quantile(y, probs = c(0.25, 0.50, 0.75), na.rm = TRUE)
-  
-    
   data |> 
     subset(variable %in% variables) -> data 
   
@@ -29,29 +49,15 @@
                       q[2]  + 1.5 * diff(q)
                     })
   
-  print(irqL)
   data |> 
     ggplot2::ggplot(ggplot2::aes(time, value)) +
     ggplot2::geom_hline(data = hlineMedian, ggplot2::aes(yintercept = value), col = 'darkgreen') +
     ggplot2::geom_hline(data = irqL, ggplot2::aes(yintercept = value), colour = 'grey') +
     ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey')  -> gp
-    
-    
   
   if (require("ggh4x")){
-    if ('peptide' %in% colnames(data)){
-      gp +
-        ggh4x::facet_grid2(peptide ~  variable * Instrument, scales = "free_y", independent = "y") +
-        ggplot2::theme(legend.position = "none") -> gp
-    }else if ('scanType' %in% colnames(data)){
-      gp +
-        ggh4x::facet_grid2(scanType ~  variable * Instrument, scales = "free_y", independent = "y") +
-        ggplot2::theme(legend.position = "none") -> gp
-    }else{
-      gp + 
-      ggh4x::facet_grid2(. ~   variable * Instrument, scales = "free_y", independent = "y") -> gp
-    }
-  }else
+    .ggh4x(gp, data) -> gp
+  }else{
     warning("install package 'ggh4x' to free y-axis scales.")
     if ('peptide' %in% colnames(data)){
       gp + ggplot2::facet_grid(peptide ~  variable * Instrument, scales = "free_y") +
@@ -62,10 +68,10 @@
     }else{
       gp + ggplot2::facet_grid(. ~   variable * Instrument, scales = "free_y")  -> gp
     }
-
+  }
+  
   gp
 }
-
 
 
 .ggplotAutoQC03 <- function(data = NULL, variables = NULL, alpha = 0.7){
