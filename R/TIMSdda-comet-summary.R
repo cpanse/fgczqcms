@@ -33,9 +33,7 @@ harmonizeTimsDDA <- function(input){
       )
     }) |>
     Reduce(f = rbind) |>
-    assignInstrument() -> x
-  
-  
+    assignInstrument() -> y
   
   input |>
     dirname() |>
@@ -52,11 +50,15 @@ harmonizeTimsDDA <- function(input){
       S$m <- f
       S
     }, mc.cores = 64) |> 
-    Reduce(f = rbind) -> y
+    Reduce(f = rbind) -> x
   
-  y$m <- strsplit(y$m, '/') |> vapply(FUN = function(x){x[length(x)-1]}, FUN.VALUE="20210302_015_autoQC4L_88min_S1-A2_1_1424")
+  x$m <- strsplit(x$m, '/') |>
+    vapply(FUN = function(x){x[length(x)-1]},
+           FUN.VALUE="20210302_015_autoQC4L_88min_S1-A2_1_1424")
   
-  x$m <- gsub(".d.zip", "", x$filename) |> strsplit('/')  |> vapply(FUN = function(x){x[length(x)]}, FUN.VALUE="20210302_015_autoQC4L_88min_S1-A2_1_1424")
+  y$m <- gsub(".d.zip", "", y$filename) |>
+    strsplit('/')  |> vapply(FUN = function(x){x[length(x)]},
+                             FUN.VALUE="20210302_015_autoQC4L_88min_S1-A2_1_1424")
   
   merge(x, y, by = "m") -> S
   
