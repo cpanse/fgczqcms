@@ -107,7 +107,8 @@
 
 #' @return a list of B-Fabric instrumentids
 .getInstruments <- function(){
-  list(EXPLORIS_2 = 335,
+  list(TIMSTOFFLEX_1 = 382,
+       EXPLORIS_2 = 335,
        EXPLORIS_1 = 253,
        LUMOS_2 = 252,
        TIMSTOF_1 = 218,

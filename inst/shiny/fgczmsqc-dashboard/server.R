@@ -261,14 +261,14 @@ function(input, output, session) {
   })
   
   
-  output$instrument <- renderUI({
-   # fluidRow(
-      selectInput('instrument', 'instruments',
-                  instruments(),
-                  multiple = FALSE,
-                  selected = instruments()[1])
-   # )
-  })
+#  output$instrument <- renderUI({
+#   # fluidRow(
+#      selectInput('instrument', 'instruments',
+#                  instruments(),
+#                  multiple = FALSE,
+#                  selected = instruments()[1])
+#   # )
+#  })
   
   output$useBfabric <- renderUI({
     if (require(bfabricShiny)){
