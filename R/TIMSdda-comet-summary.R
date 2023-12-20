@@ -66,9 +66,9 @@ harmonizeTimsDDA <- function(input){
   S[, cc]
 }
 
-input <- c('/scratch/cpanse/autoQC4L/TIMSTOF_1/pfiles_TIMSTOF_1_autoQC4L.txt',
-           '/scratch/cpanse/autoQC03dda/TIMSTOFFLEX_1/pfiles_TIMSTOF_1_autoQC03dda.txt')
+# input <- c('/scratch/cpanse/autoQC4L/TIMSTOF_1/pfiles_TIMSTOF_1_autoQC4L.txt',
+#           '/scratch/cpanse/autoQC03dda/TIMSTOFFLEX_1/pfiles_TIMSTOF_1_autoQC03dda.txt')
 
-harmonizeTimsDDA(input)
+#harmonizeTimsDDA(input)
 
 
