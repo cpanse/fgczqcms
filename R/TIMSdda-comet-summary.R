@@ -42,6 +42,7 @@ harmonizeTimsDDA <- function(input){
     lapply(FUN = function(d){file.path(d, list.files(d, pattern = ".*comet.txt", recursive = TRUE))}) |>
     unlist() |>
     parallel::mclapply(FUN = function(f){
+      message("Reading file", f, "...")
       x <- read.table(file.path(f), header = TRUE, fill = TRUE, skip=1)  
       protViz::summary.cometdecoy(x) -> S
       S$scanType <- "TIMS"
@@ -50,7 +51,7 @@ harmonizeTimsDDA <- function(input){
       S$TIC <- NA
       S$m <- f
       S
-    }) |> 
+    }, mc.cores = 64) |> 
     Reduce(f = rbind) -> y
   
   y$m <- strsplit(y$m, '/') |> vapply(FUN = function(x){x[length(x)-1]}, FUN.VALUE="20210302_015_autoQC4L_88min_S1-A2_1_1424")
