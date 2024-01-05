@@ -410,21 +410,37 @@ function(input, output, session) {
               'Instrument' %in% colnames(x))
     x[, c('time', 'Instrument')] |>
       split(f = x$Instrument) |>
-      lapply(FUN = tail, n = 1) |>
+      lapply(FUN = function(o){
+        o.max <- max(o$time)
+        idx <- which(o$time == o.max)
+        o[idx[1], c('time', 'Instrument')]
+      }) |>
       Reduce(f = rbind) -> x
     format(x$time, '%Y-%m-%d %H:%M')  -> x$time
     x[rev(order(x$time)), ]
   }
 
   output$lastEntryAutoQC01 <- renderTable({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "determine last entry", detail = "autoQC01")
+    on.exit(progress$close())
+    
     .determineLastEntry(autoQC01alpha())
   })
   
   output$lastEntryAutoQC03dda <- renderTable({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "determine last entry", detail = "autoQC03 dda")
+    on.exit(progress$close())
+    
     .determineLastEntry(autoQC03DDA())
   })
   
   output$lastEntryAutoQC03dia <- renderTable({
+    progress <- shiny::Progress$new(session = session)
+    progress$set(message = "determine last entry", detail = "autoQC03 dia")
+    on.exit(progress$close())
+    
     .determineLastEntry(autoQC03DIA())
   })
   
