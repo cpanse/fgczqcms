@@ -49,7 +49,7 @@ function(input, output, session) {
   
   ### initialize modules =============
   BFabric <- bfabricInstrumentEventServer("bfabric01", filterValues = vals)
-  
+  footer01 <- "The dark green line shows the median; the lower and upper grey lines indicate the 1.5 inter-quantile range (IQR), similar to Skyline's Levey-Jennings-graph, and the cornflower blue represents 0.25 and 0.75 quantiles. "
   autoQC01 <- autoQC01Server("autoQC01",
                              filterValues = vals,
                              BFabric = BFabric,
@@ -63,7 +63,8 @@ function(input, output, session) {
                                 readFUN = .readComet,
                                 ggplot2FUN = .ggplotAutoQC03,
                                 title = "DDA (Data-dependent acquisition)",
-                                footer = "Running Comet (refer to https://github.com/UWPR/Comet) and utilizing UP000005640 FASTA as input generates the graphs.")
+                                footer = paste0(footer01,
+  "Running Comet (refer to https://github.com/UWPR/Comet) and utilizing UP000005640 FASTA as input generates the graphs."))
   
   autoQC03DIA <- autoQC03Server("autoQC03-DIA",
                                 filterValues = vals,
@@ -72,7 +73,8 @@ function(input, output, session) {
                                 readFUN = .readDIANN,
                                 ggplot2FUN = .ggplotAutoQC03,
                                 title = "DIA (Data-independent acquisition)",
-                                footer = "We compose the graphs by utilizing DIA-NN (check it out at https://github.com/vdemichev/DiaNN) and incorporating UP000005640 FASTA as input. We convert Orbitrap raw  files prior to mzML, employing ProteoWizard through  Docker and wine.")
+                                footer = paste0(footer01,
+  "We compose the graphs by utilizing DIA-NN (check it out at https://github.com/vdemichev/DiaNN) and incorporating UP000005640 FASTA as input. We convert Orbitrap raw  files prior to mzML, employing ProteoWizard through  Docker and wine."))
   
   
   
@@ -83,7 +85,8 @@ function(input, output, session) {
                                    readFUN = .readAutoQC01,
                                    ggplot2FUN = .ggplotAutoQC01,
                                    title = "autoQC01 - Biognosys iRT peptides runs",
-                                   footer = "graphs pre-computed AUC | APEX | FWHM  values by utilizing rawrr (https://bioconductor.org/packages/rawrr/). Of note, only data acquired by Orbitraps are presented.")
+                                   footer = paste0(footer01,
+  "The data are pre-computed AUC | APEX | FWHM  values by utilizing rawrr (https://bioconductor.org/packages/rawrr/). Of note, only data acquired by Orbitraps are presented. "))
   
   output$autoQC01 <- renderUI({
     autoQC01UI("autoQC01")

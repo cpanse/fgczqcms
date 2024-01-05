@@ -67,6 +67,8 @@ dashboardPage(
       href='https://www.degruyter.com/document/doi/10.1515/jib-2022-0031/html'),
     a(img(src="https://img.shields.io/badge/JPR-10.1021%2Facs.jproteome.0c00866-brightgreen"),
       href='http://dx.doi.org/10.1021/acs.jproteome.0c00866'),
+    a(img(src="https://img.shields.io/badge/JPR-10.1021%2Facs.jproteome.8b00173-brightgreen"),
+      href='http://dx.doi.org/10.1021/acs.jproteome.8b00173'),
     a(img(src="https://img.shields.io/badge/git-proteomics/fgczmsqc-pink"),
       href='https://gitlab.bfabric.org/proteomics/qc/'),
     br(),

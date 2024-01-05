@@ -36,49 +36,69 @@
 }
 
 .ggplot <- function(data = NULL, variables = NULL){
-
   stopifnot(!is.null(data),
             !is.null(variables))
-  
   data |> 
     subset(variable %in% variables) -> data 
-  
+
   if ('peptide' %in% colnames(data)){
-    hlineMedian <- aggregate(value ~ peptide * Instrument * variable, FUN = median, data = data)
+    formula <- value ~ peptide * Instrument * variable
   }else if ('scanType' %in% colnames(data)){
-    hlineMedian <- aggregate(value ~ scanType * Instrument * variable, FUN = median, data = data)
+    formula <- value ~ scanType * Instrument * variable
   }else{
-    hlineMedian <- aggregate(value ~ Instrument * variable, FUN = median, data = data)
+    formula <- value ~ Instrument * variable
   }
-  
-  irqL <- aggregate(value ~ Instrument * variable, data = data,
+
+  hlineMedian <- aggregate(formula, FUN = median, data = data)
+
+  irqL <- aggregate(formula,
+                    data = data,
                     FUN = function(x){
                       q <- quantile(x, c(0.25, 0.75));
-                      irq.low=q[1] - 1.5 * diff(q)
+                      irq.low <- q[1] - 1.5 * diff(q)
                     })
   
+  irqU <- aggregate(formula,
+                    data = data,
+                    FUN = function(x){
+                      q <- quantile(x, c(0.25, 0.75));
+                      irq.up <- q[2]  + 1.5 * diff(q)
+                    })
+  
+  
+  q25 <- aggregate(formula,
+                   data = data,
+                   FUN = function(x){
+                     q <- quantile(x, c(0.25));
+                     q
+                   })
+  
+  q75 <- aggregate(formula,
+                   data = data,
+                   FUN = function(x){
+                     q <- quantile(x, c(0.75));
+                     q
+                   })
+
   ## remove values less equal 0
   irqL |> 
     subset(irqL$value > 0) -> irqL
-  
-  irqU <- aggregate(value ~ Instrument * variable, data = data,
-                    FUN = function(x){
-                      q <- quantile(x, c(0.25, 0.75));
-                      q[2]  + 1.5 * diff(q)
-                    })
-  
+
   data |> 
     ggplot2::ggplot(ggplot2::aes(time, value)) +
     ggplot2::geom_hline(data = hlineMedian, ggplot2::aes(yintercept = value), col = 'darkgreen') +
-    ggplot2::geom_hline(data = irqL, ggplot2::aes(yintercept = value), colour = 'grey') +
-    ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey')  -> gp
-  
+    ggplot2::geom_hline(data = irqL, ggplot2::aes(yintercept = value), colour = 'grey', lwd = 1) +
+    ggplot2::geom_hline(data = irqU, ggplot2::aes(yintercept = value), colour = 'grey', lwd = 1) +
+    ggplot2::geom_hline(data = q25, ggplot2::aes(yintercept = value), colour = 'cornflowerblue') +
+    ggplot2::geom_hline(data = q75, ggplot2::aes(yintercept = value), colour = 'cornflowerblue') -> gp
+#    ggplot2::labs(subtitle = "dargreen shows the median; the lower and upper grey lines indicate the inter-quantile range; the cornflowerblue represents 0.25 and 0.75 quantiles.") -> gp
+
   if (require("ggh4x")){
     .ggh4x(gp, data) -> gp
   }else{
     .defaultFacets(gp, data) -> gp
   }
-  
+
   gp
 }
 
