@@ -405,23 +405,27 @@ function(input, output, session) {
     
   })
 
-  output$lastItems <- renderTable({
-    idx.DDA <- which(max(autoQC03DDA()$time) == autoQC03DDA()$time)[1]
-    idx.DIA <- which(max(autoQC03DIA()$time) == autoQC03DIA()$time)[1]
-    idx.autoQC01 <- which(max(autoQC01alpha()$time) == autoQC01alpha()$time)[1]
-    
-    df.DDA <- autoQC03DDA()[idx.DDA, c('File.Name', 'time', 'Instrument')]
-    df.DDA$method <- "autoQC03 DDA"
-    
-    df.DIA <- autoQC03DIA()[idx.DIA, c('File.Name', 'time', 'Instrument')]
-    df.DIA$method <- "autoQC03 DIA"
+  .determineLastEntry <- function(x){
+    stopifnot('time' %in% colnames(x),
+              'Instrument' %in% colnames(x))
+    x[, c('time', 'Instrument')] |>
+      split(f = x$Instrument) |>
+      lapply(FUN = tail, n = 1) |>
+      Reduce(f = rbind) -> x
+    format(x$time, '%Y-%m-%d %H:%M')  -> x$time
+    x[rev(order(x$time)), ]
+  }
 
-    df.autoQC01 <- autoQC01alpha()[idx.autoQC01, c('File.Name', 'time', 'Instrument')]
-    df.autoQC01$method <- "autoQC01"   
-
-    list(df.DDA, df.DIA, df.autoQC01) |> Reduce(f = rbind) -> rv
-    rv$time <- format(rv$time, "%Y-%m-%d %H:%M:%S")
-    rv[, c( 'time', 'method', 'Instrument', 'File.Name')]
+  output$lastEntryAutoQC01 <- renderTable({
+    .determineLastEntry(autoQC01alpha())
+  })
+  
+  output$lastEntryAutoQC03dda <- renderTable({
+    .determineLastEntry(autoQC03DDA())
+  })
+  
+  output$lastEntryAutoQC03dia <- renderTable({
+    .determineLastEntry(autoQC03DIA())
   })
   
   # Values from cdata returned as text
