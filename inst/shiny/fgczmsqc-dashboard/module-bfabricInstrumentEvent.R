@@ -1,5 +1,6 @@
 #R
 
+
 bfabricInstrumentEventUI <- function(id){
   ns <- NS(id)
   
@@ -53,39 +54,11 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    rv
                  })
                  
-                 ## Fetch bfabricInstrumentEvents  -------------
-                 bfabricInstrumentEventFetch <- reactive({
-                   progress <- shiny::Progress$new(session = session)
-                   progress$set(message = "Fetching instrument events ...")
-                   on.exit(progress$close())
-
-                   rv <- bfabricShiny::readPages(login,
-                                                 webservicepassword,
-                                                 endpoint = 'instrumentevent',
-                                                 query = list(instrumentid = .getInstruments() |>
-                                                                as.integer() |> as.list()),
-                                                 posturl = bfabricposturl)  |>
-                     lapply( FUN=function(x){
-                       if (all(c('description', 'datetime') %in% names(x))){
-                         df <- data.frame(time = (x$datetime |> as.POSIXlt()),
-                                          instrumentid = as.integer(x$instrument$`_id`),
-                                          description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
-                                          instrumenteventtypeid = x$instrumenteventtype$`_id`)
-                         return(df)
-                       }
-                       NULL
-                     }) |>
-                     Reduce(f = rbind)  
-                   
-                   return(rv[order(rv$time), ])
-                 })
+               
                  ## TODO(cp): give meaningful names
                  bfabricInstrumentEvents <- reactive({
-                   S <- bfabricInstrumentEventFetch()
-                   II <- .getInstruments()
+                   S <- .composeInstrumentEvents()
                    IET <- bfabricInstrumentEventTypeFetch()
-
-                   S$InstrumentName <- names(sapply(S$instrumentid, function(x){which(x == II)}))
                    S$InstrumentEventTypeName <- IET[match(S$instrumenteventtypeid, IET$id), 'name']
                    return(S)
                  })
@@ -110,17 +83,8 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    if (filterValues$useBFabric){
                      shiny::req(bfabricInstrumentEvents())
 
-                     n <- length(unique(bfabricInstrumentEvents()$instrumentid))
-
-                     lattice::dotplot(~ time | InstrumentName,
-                                      group = InstrumentEventTypeName,
-                                      layout = c(1, n),
-                                      data = bfabricInstrumentEvents(),
-                                      cex = 1,
-                                      pch = 22,
-                                      auto.key = list(space = "right", pch=22),
-                                      main = 'B-Fabric instrument events grouped by event type',
-                     )
+                     bfabricInstrumentEvents() |> .plotBfabricEvents()
+                  
                    }else{NULL}
                  })
                  return(list(bfabricInstrumentEvents = bfabricInstrumentEvents,
