@@ -36,6 +36,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                  })
                  
                  
+                 ## TODO(cpanse): move to helper function
                  ## Fetch bfabricInstrumentEventType ========
                  bfabricInstrumentEventTypeFetch <- reactive({
                    progress <- shiny::Progress$new(session = session)
@@ -57,6 +58,10 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                
                  ## TODO(cp): give meaningful names
                  bfabricInstrumentEvents <- reactive({
+                   progress <- shiny::Progress$new(session = session)
+                   progress$set(message = "Fetching instrument event ...")
+                   on.exit(progress$close())
+                   
                    S <- .composeInstrumentEvents()
                    IET <- bfabricInstrumentEventTypeFetch()
                    S$InstrumentEventTypeName <- IET[match(S$instrumenteventtypeid, IET$id), 'name']
@@ -71,7 +76,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    on.exit(progress$close())
 
 
-                   Filter <- as.integer(bfabricInstrumentEvents()$instrumentid) %in% (.getInstruments()[filterValues$instrument] |> unlist() |> as.integer()) &
+                   Filter <- bfabricInstrumentEvents()$instrumentName %in% filterValues$instrument &
                      filterValues$timeMin <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < filterValues$timeMax
                    
                    bfabricInstrumentEvents()[Filter, ]
