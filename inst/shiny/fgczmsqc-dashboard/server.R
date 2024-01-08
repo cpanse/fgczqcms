@@ -13,6 +13,7 @@ stopifnot(require(readr),
 
 source('helpers-ggplot2.R')
 source('helpers-readr.R')
+source('helpers-bfabric.R')
 source('helpers.R')
 source('module-autoQC01.R')
 source('module-autoQC03.R')
