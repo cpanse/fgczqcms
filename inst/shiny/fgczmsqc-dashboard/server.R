@@ -152,8 +152,8 @@ function(input, output, session) {
     if (timeDiff < as.integer(input$timeRange) * 3600 * 24){
       vals$timeRangeInSecs <- as.integer(input$timeRange) * 3600 * 24
       
-      if (vals$timeMin > Sys.time() - 21*24*3600){
-        vals$timeMin <- Sys.time() - 21*24*3600
+      if (vals$timeMin > Sys.time() - 60 * 24 * 3600){
+        vals$timeMin <- Sys.time() - 60 * 24 * 3600
       }
       
       if (vals$timeMax < Sys.time()){

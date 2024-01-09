@@ -12,7 +12,7 @@ rawrrUI <- function(id){
                column(6, offset = 0,
                       fluidRow(plotOutput(NS(id, "plotChromatograms"))),
                       fluidRow(sliderInput(NS(id, "rtwindow"), "rt window",
-                                           min = 0.0, max = 40, value = c(10, 29), step = 0.5,
+                                           min = 0.0, max = 75, value = c(10, 29), step = 0.5,
                                            width = "100%"))),
                column(6, offset = 0,
                       fluidRow(plotOutput(NS(id, "plotTools"))),
