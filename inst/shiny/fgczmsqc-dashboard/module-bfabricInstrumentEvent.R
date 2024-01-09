@@ -11,7 +11,7 @@ bfabricInstrumentEventUI <- function(id){
 bfabricInstrumentEventServer <- function(id, filterValues){
   moduleServer(id,
                function(input, output, session) {
-
+                 
                  output$ui <- renderUI({
                    
                    status <- function(){
@@ -21,18 +21,30 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                        "warning"
                      }
                    }
-                   shinydashboard::box(title = "B-Fabric instrument events",
-                                       tagList(
-                                         plotOutput(NS(id, "plotBfabricInstrumentEvents"), height = 600)
-                                       ),
-                                       status = status(),
-                                       solidHeader = TRUE,
-                                       collapsible = TRUE,
-                                       collapsed = !filterValues$useBFabric,
-                                       width = 12,
-                                       footer = "Once enabled, the graph displays all (including
+                   
+                   tagList(
+                     shinydashboard::box(title = "B-Fabric last instrument event",
+                                         tableOutput(NS(id, "lastEntryBfabricInstrumentEvents")),
+                                         status = status(),
+                                         solidHeader = TRUE,
+                                         collapsible = TRUE,
+                                         collapsed = !filterValues$useBFabric,
+                                         width = 12,
+                                         footer = "display the last entry for each instrument."),
+                     shinydashboard::box(title = "B-Fabric instrument events",
+                                         tagList(
+                                           plotOutput(NS(id, "plotBfabricInstrumentEvents"), height = 600)
+                                         ),
+                                         status = status(),
+                                         solidHeader = TRUE,
+                                         collapsible = TRUE,
+                                         collapsed = !filterValues$useBFabric,
+                                         width = 12,
+                                         footer = "Once enabled, the graph displays all (including
                        child instruments) instrument events fetched by the
-                       bfabric system.")
+                       bfabric system."),
+                     
+                   )
                  })
                  
                  
@@ -82,7 +94,22 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    bfabricInstrumentEvents()[Filter, ]
                  })
                  
-
+                 output$lastEntryBfabricInstrumentEvents <- renderTable({
+                   
+                   message(" output$lastEntryBfabricInstrumentEvents")
+                   if (filterValues$useBFabric){
+                     shiny::req(bfabricInstrumentEvents())
+                     
+                     progress <- shiny::Progress$new(session = session)
+                     progress$set(message = "determine last ", detail = "instrument event ...")
+                     on.exit(progress$close())
+                     rv <- .determineLastEntry(bfabricInstrumentEvents())
+                     print(rv)
+                     return(rv)
+                   }else{NULL}
+                   
+                 })
+                 
                  ## Plots ==================
                  output$plotBfabricInstrumentEvents <- renderPlot({
                    if (filterValues$useBFabric){
@@ -92,6 +119,8 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                   
                    }else{NULL}
                  })
+                 
+                 
                  return(list(bfabricInstrumentEvents = bfabricInstrumentEvents,
                              bfabricInstrumentEventsFiltered = bfabricInstrumentEventsFiltered))
                }

@@ -88,7 +88,7 @@
 #' .composeInstrumentEvents() |> .plotBfabricEvents()
 .plotBfabricEvents <- function(x){
   
-  n <- x$instrumentName |> unique() |> length()
+  n <- x$Instrument |> unique() |> length()
   
   lattice::dotplot(~ time | Instrument,
                    group = x$type,

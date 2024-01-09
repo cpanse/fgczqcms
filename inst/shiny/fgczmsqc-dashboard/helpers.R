@@ -212,6 +212,9 @@
 #' 
 #' @description
 #' data are spitted bu Instrument and the lastest entry of each instrument is returned
+#' @examples
+#' .composeInstrumentEvents() |> .determineLastEntry()
+#' 
 .determineLastEntry <- function(x){
   stopifnot('time' %in% colnames(x),
             'Instrument' %in% colnames(x))
