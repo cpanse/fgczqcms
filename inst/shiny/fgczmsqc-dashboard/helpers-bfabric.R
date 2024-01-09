@@ -1,7 +1,7 @@
 #R
 
 .getChildInstruments <- function(instrumentIds = (.getInstruments() |>
-                                   as.integer() |> as.list())){
+                                                    as.integer() |> as.list())){
   
   rv <- bfabricShiny::readPages(login,
                                 webservicepassword,
@@ -36,20 +36,23 @@
                                 webservicepassword,
                                 endpoint = 'instrumentevent',
                                 query = list(instrumentid = instrumentIds),
-                                posturl = bfabricposturl)  |>
-    lapply(FUN = function(x){
-      if (all(c('description', 'datetime') %in% names(x))){
-        df <- data.frame(time = (x$datetime |> as.POSIXlt()),
-                         instrumentid = as.integer(x$instrument$`_id`),
-                         description  = x$description, # (x$description |> gsub(pattern = '\r\n', replacement = '')),
-                         instrumenteventtypeid = x$instrumenteventtype$`_id`)
-        return(df)
-      }
-      NULL
-    }) |>
-    Reduce(f = rbind)  
+                                posturl = bfabricposturl)  
   
-  return(rv[order(rv$time), ])
+  instrumentId <- vapply(rv, function(x)x$instrument$`_id`, FUN.VALUE = 1)
+  instrumentEventTypeId <- vapply(rv, function(x)x$instrumenteventtype$`_id`, FUN.VALUE = 1)
+  description <- vapply(rv, function(x){if('description' %in% names(x)){x$description}else{""}}, FUN.VALUE = "OTC")
+  time <- lapply(rv, function(x){if('datetime' %in% names(x)){x$datetime}else{NA}}) |> unlist() |> as.POSIXct()
+  
+  
+  df <- data.frame(
+    instrumentid = instrumentId,
+    instrumenteventtypeid = instrumentEventTypeId,
+    description = description,
+    time = time
+  )
+  na.omit(df) -> df
+  
+  df[order(df$time), ]
 }
 
 
@@ -63,7 +66,8 @@
   instrumentIds |>
     .getChildInstruments() -> rv.childs
   
-  c(rv.childs$child, instrumentIds) |> unique() |>
+  c(rv.childs$child, instrumentIds) |>
+    unique() |>
     .getInstrumentEvent() -> rv
   
   

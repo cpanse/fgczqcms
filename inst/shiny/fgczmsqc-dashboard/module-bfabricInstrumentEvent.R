@@ -23,18 +23,24 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    }
                    
                    tagList(
+                     shinydashboard::box(title = "B-Fabric instrument events frequency",
+                                         tableOutput(NS(id, "bfabricInstrumentEventsFrequency")),
+                                         status = status(),
+                                         solidHeader = TRUE,
+                                         collapsible = TRUE,
+                                         collapsed = !filterValues$useBFabric,
+                                         width = 6,
+                     ),
                      shinydashboard::box(title = "B-Fabric last instrument event",
                                          tableOutput(NS(id, "lastEntryBfabricInstrumentEvents")),
                                          status = status(),
                                          solidHeader = TRUE,
                                          collapsible = TRUE,
                                          collapsed = !filterValues$useBFabric,
-                                         width = 12,
+                                         width = 6,
                                          footer = "display the last entry for each instrument."),
                      shinydashboard::box(title = "B-Fabric instrument events",
-                                         tagList(
-                                           plotOutput(NS(id, "plotBfabricInstrumentEvents"), height = 600)
-                                         ),
+                                           plotOutput(NS(id, "plotBfabricInstrumentEvents"), height = 600),
                                          status = status(),
                                          solidHeader = TRUE,
                                          collapsible = TRUE,
@@ -42,7 +48,8 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                                          width = 12,
                                          footer = "Once enabled, the graph displays all (including
                        child instruments) instrument events fetched by the
-                       bfabric system."),
+                       bfabric system.")
+                     
                      
                    )
                  })
@@ -94,9 +101,23 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    bfabricInstrumentEvents()[Filter, ]
                  })
                  
+                 
+                 output$bfabricInstrumentEventsFrequency <- renderTable({
+                   if (filterValues$useBFabric){
+                     shiny::req(bfabricInstrumentEvents())
+                     aggregate(. ~ Instrument + type,
+                               data = bfabricInstrumentEvents(),
+                               FUN=length)[, 1:3] -> df
+                     
+                     return(df)
+                   }else{
+                     return(NULL)
+                   }
+                 })
+                 
                  output$lastEntryBfabricInstrumentEvents <- renderTable({
                    
-                   message(" output$lastEntryBfabricInstrumentEvents")
+                  
                    if (filterValues$useBFabric){
                      shiny::req(bfabricInstrumentEvents())
                      
