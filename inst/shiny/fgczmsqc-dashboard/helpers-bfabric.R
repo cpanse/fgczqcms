@@ -79,7 +79,7 @@
   
   
   merge(rv, t3, by = 'instrumentid') -> rv
-  
+  colnames(rv)[colnames(rv) == "instrumentName"] <- "Instrument"
   rv
 }
 
@@ -90,7 +90,7 @@
   
   n <- x$instrumentName |> unique() |> length()
   
-  lattice::dotplot(~ time | instrumentName,
+  lattice::dotplot(~ time | Instrument,
                    group = x$type,
                    layout = c(1, n),
                    data = x,

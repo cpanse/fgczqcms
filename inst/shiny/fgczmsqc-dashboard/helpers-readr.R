@@ -3,6 +3,7 @@
 
 .readDIANN <- function(filename){
   message(paste0("reading ", filename))
+  stopifnot(file.exists(filename))
   filename |>
     readr::read_delim(
       delim = ";",
@@ -34,6 +35,7 @@
 #' @examples
 #' .readComet('~/Downloads/dump/comet.RData') -> S
 .readComet <- function(filename){
+  stopifnot(file.exists(filename))
   e <- new.env()
   filename |>
     load(envir = e)
