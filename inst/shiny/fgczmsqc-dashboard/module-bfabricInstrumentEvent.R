@@ -95,7 +95,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    on.exit(progress$close())
 
 
-                   Filter <- bfabricInstrumentEvents()$instrumentName %in% filterValues$instrument &
+                   Filter <- bfabricInstrumentEvents()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < filterValues$timeMax
                    
                    bfabricInstrumentEvents()[Filter, ]
