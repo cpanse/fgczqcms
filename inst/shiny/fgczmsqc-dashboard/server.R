@@ -9,7 +9,8 @@ stopifnot(require(readr),
           require(shinydashboard),
           require(lattice),
           require(rawDiag),
-          require(rawrr))
+          require(rawrr),
+          require(ggnewscale))
 
 source('helpers-ggplot2.R')
 source('helpers-readr.R')
@@ -277,7 +278,7 @@ function(input, output, session) {
   output$useBfabric <- renderUI({
     if (require(bfabricShiny)){
       L <- checkboxInput('useBfabric',
-                                  'show B-Fabric Instrument Events',
+                                  'show instrument events',
                                   value = FALSE)
       return(L)
     }

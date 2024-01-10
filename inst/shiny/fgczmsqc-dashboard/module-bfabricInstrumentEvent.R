@@ -100,8 +100,7 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    
                    bfabricInstrumentEvents()[Filter, ] -> rv
                    idx <- order(rv$time, decreasing = TRUE)
-                   rv$time <- format(rv$time, format = "%Y-%m-%d %H:%M")
-
+                   #rv$time <- format(rv$time, format = "%Y-%m-%d %H:%M")
                    rv[idx, ]
                  })
                  

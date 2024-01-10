@@ -244,13 +244,16 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                  ## render instrumentEvents
                  ## TODO(cp): add module parameter when the table should be collapsed
                  output$instrumentEvents <- renderUI({
+                   rv <- BFabric$bfabricInstrumentEventsFiltered()
+                   rv$time <- format(rv$time, format = "%Y-%m-%d %H:%M")
+                   
                    shinydashboard::box(title = "Instrument events",
                                        status = "primary",
                                        solidHeader = TRUE,
                                        collapsible = TRUE,
                                        width = 12,
                                        tagList(
-                                         DT::renderDataTable({ BFabric$bfabricInstrumentEventsFiltered() })
+                                         DT::renderDataTable({ rv })
                                        ))
                  })
                  
@@ -272,10 +275,12 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    ggplot2FUN(dataFiltered(), input$variables) -> gp
                    
                    if (filterValues$useBFabric){
-                     gp + ggplot2::geom_vline(xintercept =  BFabric$bfabricInstrumentEventsFiltered()$time,
+                     gp +
+                       ggnewscale::new_scale_colour() +
+                       ggplot2::geom_vline(data = BFabric$bfabricInstrumentEventsFiltered(),
+                                              ggplot2::aes(xintercept = time, color = InstrumentEventTypeName),
                                               linetype = "dashed", 
-                                              color = "red",
-                                              size = 1) -> gp
+                                              linewidth = 0.5) -> gp
                    }
                    
                    if (filterValues$addSmoothing){
