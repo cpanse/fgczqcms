@@ -98,7 +98,11 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                    Filter <- bfabricInstrumentEvents()$Instrument %in% filterValues$instrument &
                      filterValues$timeMin <= bfabricInstrumentEvents()$time & bfabricInstrumentEvents()$time < filterValues$timeMax
                    
-                   bfabricInstrumentEvents()[Filter, ]
+                   bfabricInstrumentEvents()[Filter, ] -> rv
+                   idx <- order(rv$time, decreasing = TRUE)
+                   rv$time <- format(rv$time, format = "%Y-%m-%d %H:%M")
+
+                   rv[idx, ]
                  })
                  
                  
