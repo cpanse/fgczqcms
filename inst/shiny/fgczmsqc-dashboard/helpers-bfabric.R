@@ -93,6 +93,7 @@
 .plotBfabricEvents <- function(x){
   n <- x$Instrument |> unique() |> length()
   
+  base::save(x, file = '/tmp/x.RData')
   lattice::dotplot(~ time | Instrument,
                    group = x$type,
                    layout = c(1, n),
@@ -101,4 +102,20 @@
                    pch = 22,
                    auto.key = list(space = "right", pch=22),
                    sub = 'B-Fabric instrument events grouped by child|parent instrument type')
+}
+
+.plotBfabricEventFrequency <- function(x){
+  n <- x$Instrument |> unique() |> length()
+  
+  
+  x$Ym<-as.POSIXct(format(x$time, "%Y-%m-15"))
+  aggregate(. ~ Ym + Instrument + type, FUN=length, data = x) -> S
+  
+  lattice::xyplot(as.integer(time) ~ Ym | Instrument,
+                  group = type,
+                  data = S,
+  layout = c(1, n),
+  type = 'b',
+  scales = list(y = list(relation = "free")),
+  auto.key = list(space = "top"))
 }

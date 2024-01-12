@@ -349,9 +349,24 @@ function(input, output, session) {
     return(t)
   })
   
+  output$plotFrequency <- renderPlot({
+    shiny::req(dataSummary())
+    S <- dataSummary()
+    S$Ym<-as.POSIXct(format(S$time, "%Y-%m-15"))
+    aggregate(. ~ Ym + Instrument + method, FUN=length, data = S) -> S
+    lattice::xyplot(as.integer(time) ~ Ym | Instrument,
+                    group = method,
+                    data = S,
+                    layout=c(1, length(unique(S$Instrument))),
+                    type='b',
+                    scales = list(y = list(relation = "free")),
+                    auto.key = list(space = "top"))
+  })
+  
   ## plotSummaryLCMSruns  --------
   output$plotSummaryLCMSruns  <- renderPlot({
     shiny::req(dataSummary())
+    # ss<-dataSummary(); base::save(ss, file = "/tmp/dataSummary.RData")
     trellis.par.set("superpose.symbol", superpose.symbol())
     lattice::dotplot(Instrument ~ time | method,
                      groups = method,

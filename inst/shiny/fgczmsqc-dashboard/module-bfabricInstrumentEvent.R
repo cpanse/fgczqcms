@@ -48,7 +48,15 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                                          width = 12,
                                          footer = "Once enabled, the graph displays all (including
                        child instruments) instrument events fetched by the
-                       bfabric system.")
+                       bfabric system."),
+                     shinydashboard::box(title = "B-Fabric instrument event frequency",
+                                         plotOutput(NS(id, "plotBfabricInstrumentEventFrequency"), height = 600),
+                                         status = status(),
+                                         solidHeader = TRUE,
+                                         collapsible = TRUE,
+                                         collapsed = !filterValues$useBFabric,
+                                         width = 12,
+                                         )
                      
                      
                    )
@@ -143,6 +151,17 @@ bfabricInstrumentEventServer <- function(id, filterValues){
                   
                    }else{NULL}
                  })
+                 
+                 ## Plots ==================
+                 output$plotBfabricInstrumentEventFrequency <- renderPlot({
+                   if (filterValues$useBFabric){
+                     shiny::req(bfabricInstrumentEvents())
+                     
+                     bfabricInstrumentEvents() |> .plotBfabricEventFrequency()
+                     
+                   }else{NULL}
+                 })
+                 
                  
                  
                  return(list(bfabricInstrumentEvents = bfabricInstrumentEvents,
