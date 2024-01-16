@@ -1,0 +1,15 @@
+#
+.SUFFIXES: .txt
+.PHONY : run input
+
+run: dump/autoQC01-fit-apex-auc-fwhm.txt
+
+dump/autoQC01-fit-apex-auc-fwhm.txt: dump/autoQC01.input.txt
+	R -q -e  "source('R/autoQC01-fit-apex-auc-fwhm.R')" | tail
+	#touch $@
+
+
+input: dump/autoQC01.input.txt
+dump/autoQC01.input.txt: /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt
+	grep -e ".*_20[2][3-9].*autoQC01.*\.raw$$" $< > $@
+

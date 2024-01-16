@@ -2,7 +2,7 @@
 ## Christian Panse <cp@fgcz.ethz.ch> 2023-11-09
 ## server
 library(shinylogs)
-
+library(fgczqcms  )
 # requirements ===========
 stopifnot(require(readr),
           require(reshape2),
@@ -12,15 +12,6 @@ stopifnot(require(readr),
           require(rawrr),
           require(ggnewscale))
 
-source('helpers-ggplot2.R')
-source('helpers-readr.R')
-source('helpers-bfabric.R')
-source('helpers.R')
-source('module-autoQC01.R')
-source('module-autoQC03.R')
-source('module-bfabricInstrumentEvent.R')
-source('module-config.R')
-source('module-rawrr.R')
 
 # define server logic ============
 function(input, output, session) {
@@ -41,7 +32,10 @@ function(input, output, session) {
   
   
   rootdir <- reactive({
-    cands <- c("/Users/cp/Downloads/dump/", "/scratch/DIAQC/qc/dump")
+    
+    cands <- c("/Users/cp/Downloads/dump/", "/scratch/DIAQC/qc/dump",
+               file.path(system.file(package = 'fgczqcms'), 'extdata')
+    )
     for (d in cands){
       if (dir.exists(d))return(d)
     }

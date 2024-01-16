@@ -18,8 +18,7 @@ assignInstrument <- function(df){
 #' Harmonize comet DDA searches from Bruker TIMS devices
 #'
 #' @return a data.frame with the following to be used for the qc dashboard
-#'
-#' @examples
+#' @importFrom protViz summary.cometdecoy
 harmonizeTimsDDA <- function(input){
   input |>
     lapply(FUN = function(f){

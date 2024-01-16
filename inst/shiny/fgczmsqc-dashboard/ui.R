@@ -1,14 +1,9 @@
 #R
 ## Christian Panse <cp@fgcz.ethz.ch> November 2023
 library(shinylogs)
+library(shinydashboard)
 use_tracking()
-
-stopifnot(require(shinydashboard))
-
-source('module-bfabricInstrumentEvent.R')
-source('module-autoQC03.R')
-source('helpers.R')
-
+library(fgczqcms)
 imgBanner <- "graphics/fgcz-header-background.png"
 imgBanner <- "http://fgcz-ms.uzh.ch/~cpanse/fgcz-cropped.svg"
 # imgBanner <- "/Users/cp/src/gitlab.bfabric.org/proteomics/qc/inst/shiny/fgczmsqc-dashboard/graphics/fgcz-header-background.png"
