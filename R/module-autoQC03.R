@@ -22,7 +22,8 @@ autoQC03UI <- function(id){
 #' @param id 
 #' @param filterValues time and instrument information
 #' @export
-autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot2FUN, title, footer){
+autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN,
+                           ggplot2FUN, title, footer){
   moduleServer(id,
                function(input, output, session) {
                  ns <- NS(id)
@@ -132,10 +133,10 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN, ggplot
                    data()$variable |> unique()
                  })
                  output$variable <- renderUI({
-                   dataVariables() %in% c('nConfidentProteins',
-                                          'nConfidentPeptides',
-                                          'nMS2', 'Precursors.Identified',
-                                          'Proteins.Identified', 'AUC.lg2') |> 
+                   # 'nConfidentProteins',  'nMS2', 'Proteins.Identified',
+                   dataVariables() %in% c('nConfidentPeptides',
+                                          'Precursors.Identified',
+                                          'AUC.lg2') |> 
                      which() -> defaulVariablesIdx 
                    
                    shinydashboard::box(
