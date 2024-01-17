@@ -71,7 +71,9 @@ dashboardPage(
     HTML("tested on"),
     img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px'),
     sidebarMenu(
-      menuItem("session | debug", tabName = "sessionInfo", icon = icon("laptop"))
+      tagList(
+      menuItem("session | debug", tabName = "sessionInfo", icon = icon("laptop")),
+      menuItem("readme", tabName = "README", icon = icon("laptop")))
     )
   ), # dashboardSidebar
   dashboardBody(
@@ -148,6 +150,11 @@ dashboardPage(
                                   footer = "Graphs monthly number of LC-MS QC runs for each instrument and method."),
                 bfabricInstrumentEventUI("bfabric01"),
               )
+      ),
+      tabItem(tabName = "README",
+                  shinydashboard::box(tagList(
+                    includeMarkdown("README.md"),
+                  ), width = 12)
       ),
       tabItem(tabName = "sessionInfo",
               fluidRow(
