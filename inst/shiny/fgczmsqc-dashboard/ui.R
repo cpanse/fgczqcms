@@ -21,7 +21,7 @@ tl <- tagList(
 
 dashboardPage(
   skin = "black",
-  dashboardHeader(title = "Mass Spec | QC", .list = tl),
+  dashboardHeader(title = paste0("fgczqcms v", packageVersion('fgczqcms')), .list = tl),
   dashboardSidebar(
     sidebarMenu(
       menuItem("autoQC01", tabName = "autoQC01beta", icon = icon("chart-line"),
