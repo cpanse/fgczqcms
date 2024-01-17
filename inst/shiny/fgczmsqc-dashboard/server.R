@@ -343,14 +343,16 @@ function(input, output, session) {
     return(t)
   })
   
+  ## plotFrequency  --------
   output$plotFrequency <- renderPlot({
     shiny::req(dataSummary())
     S <- dataSummary()
     S$Ym<-as.POSIXct(format(S$time, "%Y-%m-15"))
-    aggregate(. ~ Ym + Instrument + method, FUN=length, data = S) -> S
+    aggregate(. ~ Ym + Instrument + method, FUN = length, data = S) -> S
     lattice::xyplot(as.integer(time) ~ Ym | Instrument,
                     group = method,
                     data = S,
+                    ylab = 'mothly aggregateed number of observations',
                     layout=c(1, length(unique(S$Instrument))),
                     type='b',
                     scales = list(y = list(relation = "free")),

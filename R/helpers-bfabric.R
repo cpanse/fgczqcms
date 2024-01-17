@@ -112,8 +112,9 @@
   lattice::xyplot(as.integer(time) ~ Ym | Instrument,
                   group = type,
                   data = S,
-  layout = c(1, n),
-  type = 'b',
-  scales = list(y = list(relation = "free")),
-  auto.key = list(space = "top"))
+                  ylab = 'mothly aggregateed number of observations',
+                  layout = c(1, n),
+                  type = 'b',
+                  scales = list(y = list(relation = "free")),
+                  auto.key = list(space = "top"))
 }
