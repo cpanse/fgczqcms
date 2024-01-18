@@ -1,1 +1,1 @@
-inst/shiny/fgczmsqc-dashboard/README.md
+inst/shiny/fgczqcms-dashboard/README.md
