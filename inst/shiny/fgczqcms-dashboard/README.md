@@ -1,4 +1,4 @@
-# README fgczqcms dashboard
+# README
 
 The fgczqcms R package contains shell scripts and a shiny dashboard for handling
 mass spec qc workflows (dia, dda) for Orbitrap and timsTof devices.
