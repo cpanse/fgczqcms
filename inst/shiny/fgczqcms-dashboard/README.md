@@ -66,7 +66,7 @@ done
 
 ## links
 
-- https://shiny-ms.fgcz.uzh.ch/fgczmsqc-dashboard/
+- https://shiny-ms.fgcz.uzh.ch/fgczqcms-dashboard/
 - https://fgcz-bfabric.uzh.ch/bfabric/application/show.html?id=331&tab=details
 
 ## contact
