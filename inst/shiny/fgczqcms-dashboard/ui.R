@@ -26,11 +26,11 @@ dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("autoQC01", tabName = "autoQC01beta", icon = icon("chart-line"),
-        badgeLabel = "ready", badgeColor = "green"),
+               badgeLabel = "ready", badgeColor = "green"),
       menuItem("autoQC03 - DDA | DIA", tabName = "autoQC03", icon = icon("chart-line"),
                badgeLabel = "now with tims data", badgeColor = "yellow"),
       menuItem("autoQC01", tabName = "autoQC01", icon = icon("chart-line"),
-                 badgeLabel = "deprecated module", badgeColor = 'blue'),
+               badgeLabel = "deprecated module", badgeColor = 'blue'),
       menuItem("summary | status", tabName = "summary", icon = icon("table"),
                badgeLabel = "ready", badgeColor = "green"),
       hr(),
@@ -72,8 +72,8 @@ dashboardPage(
     img(src='https://upload.wikimedia.org/wikipedia/commons/2/28/Firefox_logo%2C_2017.svg', width = '30px'),
     sidebarMenu(
       tagList(
-      menuItem("session | debug", tabName = "sessionInfo", icon = icon("laptop")),
-      menuItem("readme", tabName = "README", icon = icon("laptop")))
+        menuItem("session | debug", tabName = "sessionInfo", icon = icon("laptop")),
+        menuItem("readme", tabName = "README", icon = icon("laptop")))
     )
   ), # dashboardSidebar
   dashboardBody(
@@ -124,14 +124,18 @@ dashboardPage(
                                                           status = "primary",
                                                           solidHeader = TRUE,
                                                           width = 4,
-                                                          collapsible = FALSE))),
-              #  shinydashboard::box(title = "Frequency of MS QC events",
-              #                      htmlOutput("summaryFrequency"),
-              #                      solidHeader = TRUE,
-              #                      collapsible = TRUE,
-              #                      status = "primary",
-              #                      width = 12,
-              #                      footer = "MS QC event frequency in numbers and graphics"),
+                                                          collapsible = FALSE),
+                                      shinydashboard::box(title = "autoQC03 DDA - nConfidentPeptides.value ~ time | Instrument",
+                                                         plotOutput("plotAutoQC03", height = 900),
+                                                         status = "primary",
+                                                         solidHeader = TRUE,
+                                                         width = 12,
+                                                         collapsed = TRUE,
+                                                         collapsible = TRUE, 
+                                                         footer = "graphs the number of confident peptides for each instrument over time.")
+                                        
+                                      )),
+                
                 shinydashboard::box(title = "Overview: Instrument ~ time | method",
                                     plotOutput("plotSummaryLCMSruns", height = 900),
                                     width = 12,
@@ -140,21 +144,21 @@ dashboardPage(
                                     collapsed = TRUE,
                                     collapsible = TRUE,
                                     footer = "Each dot represents an LC-MS QC run."),
-              shinydashboard::box(title = "Frequency",
-                                  plotOutput("plotFrequency", height = 1500),
-                                  width = 12,
-                                  status = "primary",
-                                  solidHeader = TRUE,
-                                  collapsed = TRUE,
-                                  collapsible = TRUE,
-                                  footer = "Graphs monthly number of LC-MS QC runs for each instrument and method."),
+                shinydashboard::box(title = "Frequency",
+                                    plotOutput("plotFrequency", height = 1500),
+                                    width = 12,
+                                    status = "primary",
+                                    solidHeader = TRUE,
+                                    collapsed = TRUE,
+                                    collapsible = TRUE,
+                                    footer = "Graphs monthly number of LC-MS QC runs for each instrument and method."),
                 bfabricInstrumentEventUI("bfabric01"),
               )
       ),
       tabItem(tabName = "README",
-                  shinydashboard::box(tagList(
-                    includeMarkdown("README.md"),
-                  ), width = 12)
+              shinydashboard::box(tagList(
+                includeMarkdown("README.md"),
+              ), width = 12)
       ),
       tabItem(tabName = "sessionInfo",
               fluidRow(

@@ -377,6 +377,20 @@ function(input, output, session) {
   })
   
   
+  ## TODO(cp): tweak
+  output$plotAutoQC03 <- renderPlot({
+    lattice::xyplot(value ~ time | Instrument,
+                    data = autoQC03DDA(),
+                    scales = list(y = list(relation = "free")),
+                    pch = '.',
+                    type = 'p',
+                    cex =3,
+                    layout=c(1,10),
+                    subset = (autoQC03DDA()$variable == "nConfidentPeptides"),
+                    group=scanType, ylab='nConfidentPeptides')
+  })
+  
+  
   output$plotSummaryCumsum  <- renderPlot({
     shiny::req(dataSummary())
     

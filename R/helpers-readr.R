@@ -34,7 +34,8 @@
 #' @return a data.frame object
 #'
 #' @examples
-#' .readComet('~/Downloads/dump/comet.RData') -> S
+#' fgczqcms::.readComet('~/Downloads/dump/comet.RData') -> S
+#' lattice::xyplot(value ~ time | Instrument, data = S, scales = list(y = list(relation = "free")), pch = '.', layout=c(1,10), subset = (S$variable == "nConfidentPeptides"), group=scanType, ylab='nConfidentPeptides')
 #' @export
 .readComet <- function(filename){
   stopifnot(file.exists(filename))
@@ -62,8 +63,10 @@
     reshape2::melt(id.vars = c("Md5", "File.Name", "time", "Instrument", "scanType")) 
 }
 
-#' .readAutoQC01('/Users/cp/Downloads/dump/autoQC01-fit-apex-auc-fwhm.txt') -> S
-#' lattice::xyplot(value ~ time | Instrument * variable, group = peptide, data = S, scales = list(y = list(relation = "free")), pch = '.')
+#' fgczqcms::.readAutoQC01('/Users/cp/Downloads/dump/autoQC01-fit-apex-auc-fwhm.txt') -> S
+#' lattice::xyplot(value ~ time | Instrument * variable, group = peptide, data = S, scales = list(y = list(relation = "free")), pch = '.') -> lp
+#' # 1184 × 674
+#' jpeg("fgczmsqc-dashboard.jpg", 1.5 * 1184, 1.5 * 674, quality = 100); print(lp); dev.off()
 #' @export
 .readAutoQC01 <- function(filename){
   
