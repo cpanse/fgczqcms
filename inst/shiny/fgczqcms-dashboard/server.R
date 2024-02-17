@@ -384,7 +384,12 @@ function(input, output, session) {
                     scales = list(y = list(relation = "free")),
                     pch = '.',
                     type = 'p',
+                    panel = function(x, y,...){
+                      panel.xyplot(x,y, ...);
+                      panel.abline(v=as.POSIXct("2022-10-03"))
+                    },
                     cex =3,
+                    sub = 'The vertical line indicates the start of the move from building Y32 to Y59.',
                     layout=c(1,10),
                     subset = (autoQC03DDA()$variable == "nConfidentPeptides"),
                     group=scanType, ylab='nConfidentPeptides')

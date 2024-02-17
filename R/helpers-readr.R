@@ -36,6 +36,15 @@
 #' @examples
 #' fgczqcms::.readComet('~/Downloads/dump/comet.RData') -> S
 #' lattice::xyplot(value ~ time | Instrument, data = S, scales = list(y = list(relation = "free")), pch = '.', layout=c(1,10), subset = (S$variable == "nConfidentPeptides"), group=scanType, ylab='nConfidentPeptides')
+#' lattice::xyplot(value ~ time | Instrument, data = S,
+#'   scales = list(y = list(relation = "free")),
+#'   pch = '.', layout=c(1,10),
+#'   subset = (S$variable == "nConfidentPeptides"),
+#'   group=scanType, ylab='nConfidentPeptides',
+#'   panel = function(x, y,...){
+#'       panel.xyplot(x,y, ...);
+#'       panel.abline(v=as.POSIXct("2022-10-15"))
+#'    })
 #' @export
 .readComet <- function(filename){
   stopifnot(file.exists(filename))
