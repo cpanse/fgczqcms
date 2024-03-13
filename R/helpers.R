@@ -125,7 +125,8 @@
        QEXACTIVEHF_4 = -1,
        QEXACTIVE_2 = -1,
        FUSION_1 = -1,
-       VELOS_1 = -1)
+       VELOS_1 = -1,
+       ASTRAL_1 = 337)
 }
 
 
