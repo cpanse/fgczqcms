@@ -13,12 +13,19 @@ stopifnot(require(readr),
           require(ggnewscale))
 
 
+
+
+
 # define server logic ============
 function(input, output, session) {
   track_usage(storage_mode = store_json(path = "logs-qc/"))
   
-  #  reactives =============
   
+  
+ 
+    
+  #  reactives =============
+
   ## >> reactiveValues defined here ##################
   vals <- reactiveValues(timeRangeInSecs = 14 * 3600 * 24,
                          timeMin = (Sys.time() - (7 * 3600 * 24)),
@@ -41,6 +48,9 @@ function(input, output, session) {
     }
     NULL
   })
+  
+  
+  
   
   
   ### initialize modules =============
@@ -88,6 +98,8 @@ function(input, output, session) {
     autoQC01UI("autoQC01")
   })
   
+ 
+  
   rawFileHeader <- reactive({
     shiny::req(input$file)
     
@@ -122,6 +134,9 @@ function(input, output, session) {
     NULL
   })
   
+  
+    
+  
   observeEvent({ input$addSmoothing }, {
     vals$addSmoothing <- input$addSmoothing
   })
@@ -139,6 +154,7 @@ function(input, output, session) {
   
   observeEvent({ input$instrument }, {
     vals$instrument <- input$instrument
+    updateQueryString(paste0("?instrument=", input$instrument), mode = "push")
   })
   observeEvent({ input$timeRange }, {
     #shiny::req(input$timeRange)
@@ -260,14 +276,23 @@ function(input, output, session) {
   })
   
   
-#  output$instrument <- renderUI({
-#   # fluidRow(
-#      selectInput('instrument', 'instruments',
-#                  instruments(),
-#                  multiple = FALSE,
-#                  selected = instruments()[1])
-#   # )
-#  })
+  output$instrument <- renderUI({
+    query <- getQueryString()
+    
+    ## initial value
+    selectedInstrument <- names(.getInstruments())[2]
+  
+    ## get value from query url, e.g., '/?instrument=EXPLORIS_2'
+    if ("instrument" %in% names(query)){
+      if (query$instrument %in% names(.getInstruments())){
+        selectedInstrument <- query$instrument
+      }
+    }
+    selectInput('instrument', 'instruments',
+                  names(.getInstruments()),
+                  multiple = FALSE,
+                  selected = selectedInstrument)
+  })
   
   output$useBfabric <- renderUI({
     if (require(bfabricShiny)){

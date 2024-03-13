@@ -9,6 +9,8 @@ imgBanner <- "http://fgcz-ms.uzh.ch/~cpanse/fgcz-cropped.svg"
 # imgBanner <- "/Users/cp/src/gitlab.bfabric.org/proteomics/qc/inst/shiny/fgczmsqc-dashboard/graphics/fgcz-header-background.png"
 #stopifnot(file.exists(imgBanner))
 
+
+
 tl <- tagList(
   tags$li(
     a(href = 'http://www.fgcz.ch', 
@@ -34,10 +36,7 @@ dashboardPage(
       menuItem("summary | status", tabName = "summary", icon = icon("table"),
                badgeLabel = "ready", badgeColor = "green"),
       hr(),
-      selectInput('instrument', 'instruments',
-                  names(.getInstruments()),
-                  multiple = FALSE,
-                  selected = names(.getInstruments())[2]),
+      htmlOutput("instrument"),
       htmlOutput("useBfabric"),
       selectInput('timeRange', 'time range in days',
                   c(7, 14, 30, 60, 90, 180, 365, 2:10*365),
