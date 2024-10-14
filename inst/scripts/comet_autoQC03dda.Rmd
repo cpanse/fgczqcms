@@ -1,0 +1,606 @@
+---
+title: "autoQC4L STATISTICS"
+output:
+  html_document:
+    toc_float: true
+    toc: true
+    number_sections: true
+    theme: united
+bibliography: fgcz.bib
+params:
+  inputRawFiles: "/scratch/cpanse/autoQC4L_input.csv"
+  inputFilePreprocessedLinearModels: "/scratch/cpanse/autoQC4L.csv"
+  MONO_PATH: "/usr/local/lib/RawFileReader/"
+  blacklist: "/scratch/cpanse/comet/blacklist.txt"
+  cometRData: "/scratch/cpanse/comet/comet.RData"
+  logbase: 10
+  timecutoff: 5
+---
+
+```{r global_options, include=FALSE}
+start_time <- Sys.time()
+knitr::opts_chunk$set(fig.width=10,
+  fig.height=10,
+  fig.retina=3,
+  echo=FALSE, 
+  warning=FALSE, 
+  message=FALSE)
+
+stopifnot(
+  require(knitr),
+  require(protViz),
+  require(rawrr),
+  require(colorspace),
+  require(plotly),
+  require(lattice)
+)
+
+Sys.setenv(MONO_PATH = params[["MONO_PATH"]])
+
+cv <- 1 - 2:7 / 10
+t <- trellis.par.get("strip.background")
+t$col <- (rgb(cv, cv, cv))
+trellis.par.set("strip.background",t)
+
+tp <- trellis.par.get("par.sub.text")
+tp$cex <- 0.5
+trellis.par.set("par.sub.text", tp)
+
+
+.promega6x5mix.sanity.check <- function (x, iontol = 0.01)
+{
+    stopifnot(!is.null(x))
+    stopifnot(nchar(x$sequence) == length(x$mod))
+    stopifnot(abs((((parentIonMass(x$sequence) + sum(x$mod) +
+        2 * 1.00794)/2) - x$mp2h2p)) < 7e-04)
+}
+
+.getPromega6x5mix <- function () 
+{
+    L <- list()
+    L[[1]] <- list(sequence = "VTSGSTSTSR", mod = c(6.013809, 
+        5.010161, 4.007678, 0, 0, 5.010161, 0, 5.010161, 0, 8.999969), 
+        mp2h2p = 509.2739, mass = 1016.533, abundance = 1)
+    L[[2]] <- list(sequence = "VTSGSTSTSR", mod = c(6.013809, 
+        5.010161, 0, 0, 0, 0, 0, 5.010161, 0, 8.999969), mp2h2p = 504.7651, 
+        mass = 1007.515, abundance = 0.1)
+    L[[3]] <- list(sequence = "VTSGSTSTSR", mod = c(6.013809, 
+        5.010161, 0, 0, 0, 0, 0, 0, 0, 8.999969), mp2h2p = 502.2599, 
+        mass = 1002.505, abundance = 0.01)
+    L[[4]] <- list(sequence = "VTSGSTSTSR", mod = c(6.013809, 
+        0, 0, 0, 0, 0, 0, 0, 0, 8.999969), mp2h2p = 499.7547, 
+        mass = 997.494, abundance = 0.001)
+    L[[5]] <- list(sequence = "VTSGSTSTSR", mod = c(0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 8.999969), mp2h2p = 496.7478, mass = 991.48, 
+        abundance = 1e-04)
+    L[[6]] <- list(sequence = "LASVSVSR", mod = c(7.016793, 8.014309, 
+        0, 6.013809, 0, 6.013809, 0, 8.999969), mp2h2p = 428.2738, 
+        abundance = 1)
+    L[[7]] <- list(sequence = "LASVSVSR", mod = c(7.016793, 0, 
+        0, 6.013809, 0, 6.013809, 0, 8.999969), mp2h2p = 424.2667, 
+        abundance = 0.1)
+    L[[8]] <- list(sequence = "LASVSVSR", mod = c(0, 0, 0, 6.013809, 
+        0, 6.013809, 0, 8.999969), mp2h2p = 420.7581, abundance = 0.01)
+    L[[9]] <- list(sequence = "LASVSVSR", mod = c(0, 0, 0, 0, 
+        0, 6.013809, 0, 8.999969), mp2h2p = 417.7512, abundance = 0.001)
+    L[[10]] <- list(sequence = "LASVSVSR", mod = c(0, 0, 0, 0, 
+        0, 0, 0, 8.999969), mp2h2p = 414.7443, abundance = 1e-04)
+    L[[11]] <- list(sequence = "YVYVADVAAK", mod = c(0, 6.013809, 
+        0, 0, 6.013809, 0, 6.013809, 4.007, 4.007, 7.005559), 
+        mp2h2p = 566.83, abundance = 1)
+    L[[12]] <- list(sequence = "YVYVADVAAK", mod = c(0, 6.013809, 
+        0, 0, 6.013809, 0, 6.013809, 0, 0, 7.005559), mp2h2p = 562.8229, 
+        abundance = 0.1)
+    L[[13]] <- list(sequence = "YVYVADVAAK", mod = c(0, 0, 0, 
+        0, 6.013809, 0, 6.013809, 0, 0, 7.005559), mp2h2p = 559.816, 
+        abundance = 0.01)
+    L[[14]] <- list(sequence = "YVYVADVAAK", mod = c(0, 0, 0, 
+        0, 0, 0, 6.013809, 0, 0, 7.005559), mp2h2p = 556.8091, 
+        abundance = 0.001)
+    L[[15]] <- list(sequence = "YVYVADVAAK", mod = c(0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 7.005559), mp2h2p = 553.8022, abundance = 1e-04)
+    L[[16]] <- list(sequence = "VVGGLVALR", mod = c(6.013809, 
+        6.013809, 0, 7.016793, 6.013809, 0, 0, 0, 8.999969), 
+        mp2h2p = 459.8232, abundance = 1)
+    L[[17]] <- list(sequence = "VVGGLVALR", mod = c(6.013809, 
+        6.013809, 0, 0, 6.013809, 0, 0, 0, 8.999969), mp2h2p = 456.3147, 
+        abundance = 0.1)
+    L[[18]] <- list(sequence = "VVGGLVALR", mod = c(6.013809, 
+        6.013809, 0, 0, 0, 0, 0, 0, 8.999969), mp2h2p = 453.3078, 
+        abundance = 0.01)
+    L[[19]] <- list(sequence = "VVGGLVALR", mod = c(6.013809, 
+        0, 0, 0, 0, 0, 0, 0, 8.999969), mp2h2p = 450.3009, abundance = 0.001)
+    L[[20]] <- list(sequence = "VVGGLVALR", mod = c(0, 0, 0, 
+        0, 0, 0, 0, 0, 8.999789), mp2h2p = 447.294, abundance = 1e-04)
+    L[[21]] <- list(sequence = "LLSLGAGEFK", mod = c(7.016793, 
+        7.016793, 0, 7.016793, 0, 0, 0, 0, 10.02834, 7.005559), 
+        mp2h2p = 537.3441, mass = 1072.673, abundance = 1)
+    L[[22]] <- list(sequence = "LLSLGAGEFK", mod = c(7.016793, 
+        7.016793, 0, 7.016793, 0, 0, 0, 0, 0, 7.005559), mp2h2p = 532.3305, 
+        mass = 1062.646, abundance = 0.1)
+    L[[23]] <- list(sequence = "LLSLGAGEFK", mod = c(7.016793, 
+        7.016793, 0, 0, 0, 0, 0, 0, 0, 7.005559), mp2h2p = 528.8219, 
+        mass = 1055.629, abundance = 0.01)
+    L[[24]] <- list(sequence = "LLSLGAGEFK", mod = c(7.016793, 
+        0, 0, 0, 0, 0, 0, 0, 0, 7.005559), mp2h2p = 525.3134, 
+        mass = 1048.612, abundance = 0.001)
+    L[[25]] <- list(sequence = "LLSLGAGEFK", mod = c(0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 7.005559), mp2h2p = 521.8048, mass = 1041.594, 
+        abundance = 1e-04)
+    L[[26]] <- list(sequence = "LGFTDLFSK", mod = c(7.016793, 
+        0, 10.02834, 0, 0, 7.016793, 10.02834, 0, 7.005559), 
+        mp2h2p = 535.3281, mass = 1068.641, abundance = 1)
+    L[[27]] <- list(sequence = "LGFTDLFSK", mod = c(7.016793, 
+        0, 0, 0, 0, 7.016793, 10.02834, 0, 7.005559), mp2h2p = 530.3145, 
+        mass = 1058.614, abundance = 0.1)
+    L[[28]] <- list(sequence = "LGFTDLFSK", mod = c(7.016793, 
+        0, 0, 0, 0, 7.016793, 0, 0, 7.005559), mp2h2p = 525.3008, 
+        mass = 1048.587, abundance = 0.01)
+    L[[29]] <- list(sequence = "LGFTDLFSK", mod = c(7.016793, 
+        0, 0, 0, 0, 0, 0, 0, 7.005559), mp2h2p = 521.7923, mass = 1041.569, 
+        abundance = 0.001)
+    L[[30]] <- list(sequence = "LGFTDLFSK", mod = c(0, 0, 0, 
+        0, 0, 0, 0, 0, 7.005559), mp2h2p = 518.2837, mass = 1034.552, 
+        abundance = 1e-04)
+    rv <- lapply(L, .promega6x5mix.sanity.check)
+    L
+}
+
+
+```
+
+# Configuration parameters
+
+| <!-- parameter -->            | <!-- values --> 		                    |
+|-------------------------------|---------------------------------------------------|
+| file report release date:	| `r date()`			                    |
+| R version:			| `r R.version.string`		                    |
+| rawrr version: 		| `r packageVersion('rawrr')`		            |
+| rmarkdown version:       	| `r packageVersion('rmarkdown')`                   |
+| nodename: 			| `r Sys.info()['nodename']` 	                    |
+| MONO PATH:			| `r Sys.getenv('MONO_PATH')`                       |
+| input raw files:       	| `r params[['inputRawFiles']]`	                    |
+| input comet cache:       	| `r params[['cometRData']]`                        |
+| input cache lm:       	| `r params[['inputFilePreprocessedLinearModels']]` |
+| input blacklist:      	| `r params[['blacklist']]`                         |
+
+# Identification
+
+## Overview  of the last `r params[['timecutoff']]` days
+
+```{bash}
+grep raw$ /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt \
+  | awk -F'/' '$NF~/[qQ][cC]4[lL]/{print}' \
+  | grep -v -f /scratch/cpanse/comet/blacklist.txt \
+  | tail -n 25 \
+  > /scratch/cpanse/autoQC4L_input.csv
+```
+
+
+
+```{r blacklist}
+blacklist <- scan(params[['blacklist']], what = as.character())
+```
+
+```{r sourceCode}
+stopifnot(file.exists(src <- file.path(Sys.getenv("HOME"), "__checkouts/F1000_rawDiag/R/autoQC.R")))
+source(src)
+```
+
+
+```{r readFileInput}
+autoQC4L <- read.table(params[['inputRawFiles']], sep=';', col.names=c('md5', 'time', 'size', 'filename'))
+```
+
+[comet](http://comet-ms.sourceforge.net/) results using [uniprot-proteome_UP000005640.fasta](http://fgcz-ms.uzh.ch/FASTA/fgcz_uniprot-proteome_UP000005640.fasta)
+
+```{r echo=TRUE}
+load(params[['cometRData']])
+
+comet <- comet[order(comet$POSIXct, comet$scanType, decreasing = TRUE), ]
+
+comet$assignmentRate <- round (100 * comet$nConfidentPSM / comet$nPSM)
+
+comet[comet$POSIXct > (Sys.time() - (3600 * 24 * params[['timecutoff']])),
+    c('POSIXct', 'instrument', 'file', 'scanType', 'nPSM', 'nConfidentPSM',
+        'assignmentRate', 'nConfidentPeptide', 'nConfidentProteins')] |>
+  kable(row.names=FALSE)
+```
+
+download [comet](https://fgcz-ms.uzh.ch/~cpanse/comet-autoQC4L-fgcz.RData) data
+
+## Filtering
+
+```{r echo=TRUE}
+nweeks <- 6
+filter <- comet$POSIXct > (Sys.time() - (3600 * 24 * 7 * nweeks)) & (! comet$file %in% blacklist)
+```
+
+## Number of MS2 peaks 
+
+```{r nMS2}
+lattice::xyplot(nMS2 ~ POSIXct | instrument,
+  group = scanType,
+  data = comet[filter, ],
+  type = 'b',
+  ylab = 'nMS2 peaks',
+  scales = list(y = list(relation = "free")),
+  auto.key = list(space = "right"),
+  layout = c(1, length(unique(comet[filter, 'instrument']))),
+  pch = 16)
+```
+
+## Total Ion Count of MS2 
+
+```{r TIC}
+lattice::xyplot(TIC ~ POSIXct | instrument,
+  group = scanType,
+  data = comet[filter, ],
+  type = 'b',
+  ylab = 'MS2 TIC',
+  scales = list(y = list(relation = "free")),
+  auto.key = list(space = "right"),
+  layout = c(1, length(unique(comet[filter, 'instrument']))),
+  pch = 16)
+```
+
+## Number of Confident PSMs
+
+[click here for an interactive plotly object version](autoQC4L_nConfidentPSM.html)
+```{r nConfidentPSM}
+lattice::xyplot(nConfidentPSM  ~ POSIXct | instrument,
+  group = scanType,
+  data = comet[filter, ],
+  type = 'b',
+  ylab = 'number of confident peptide spectrum matches (psm) - fdr cut-off 5%',
+  sub = 'comet result using http://fgcz-ms.uzh.ch/FASTA/fgcz_uniprot-proteome_UP000005640.fasta',
+  scales = list(y = list(relation = "free")),
+  auto.key = list(space = "right"),
+  layout = c(1, length(unique(comet[filter, 'instrument']))),
+  pch = 16)
+```
+
+
+```{r nConfidentPSMggp}
+ggp <- ggplotly(gp <- ggplot(data = comet[filter,],
+  aes(x=POSIXct, y=nConfidentPSM, colour=scanType)) + 
+  geom_line() + 
+  geom_point(aes(text=file)) + 
+  facet_grid(rows=vars(instrument), scales = "free") +
+  theme_bw())
+
+htmlwidgets::saveWidget(ggp, file = "~/WWW/autoQC4L_nConfidentPSM.html")
+```
+
+## Assignment Rate
+
+[click here for an interactive plotly object version](autoQC4L_assignmentRate.html)
+```{r assignmentRate}
+xyplot(assignmentRate ~ POSIXct | instrument,
+  group=scanType,
+  data = comet[filter, ],
+  type='b',
+  ylab='nConfidentPSM / nPSM [in %] - comet fdr cut-off 5%',
+  sub='comet result using http://fgcz-ms.uzh.ch/FASTA/fgcz_uniprot-proteome_UP000005640.fasta',
+  scales = list(y = list(relation = "free")),
+  auto.key=list(space = "right"),
+  layout = c(1, length(unique(comet[filter, 'instrument']))),
+  pch = 16)
+```
+
+```{r assignmentRateggp}
+ggp <- ggplotly(ggplot(data = comet[filter,], aes(x=POSIXct, y=assignmentRate, colour=scanType)) + 
+    geom_line() + 
+    geom_point(aes(text=file)) + 
+    facet_grid(rows=vars(instrument), scales = "free") +
+    theme_bw())
+
+htmlwidgets::saveWidget(ggp, file = "~/WWW/autoQC4L_assignmentRate.html")
+```
+
+## Number of Confident Proteins
+
+[click here for an interactive plotly object version](autoQC4L_nConfidentProteins.html)
+```{r nConfidentProteins}
+xyplot(nConfidentProteins  ~ POSIXct | instrument,
+  group=scanType,
+  data = comet[filter, ],
+  type='b',
+  ylab='number of confident proteins - fdr cut-off 5%',
+  sub='comet result using http://fgcz-ms.uzh.ch/FASTA/fgcz_uniprot-proteome_UP000005640.fasta',
+  scales = list(y = list(relation = "free")),
+  auto.key=list(space = "right"),
+  layout = c(1, length(unique(comet[filter, 'instrument']))),
+  pch = 16)
+```
+
+```{r nConfidentProteinsggp}
+ggp <- ggplotly(ggplot(data = comet[filter,], aes(x=POSIXct, y=nConfidentProteins, colour=scanType)) + 
+    geom_line() + 
+    geom_point(aes(text=file)) + 
+    facet_grid(rows=vars(instrument), scales = "free") +
+    theme_bw())
+
+htmlwidgets::saveWidget(ggp, file = "~/WWW/autoQC4L_nConfidentProteins.html")
+```
+
+# Quantification
+
+Here we analyses a set of 30 peptides; 6 sets of 5 isotopologues, see also [promega](https://ch.promega.com/products/mass-spectrometry/mass-spec-reference-reagents/6-x-5-lc_ms_ms-peptide-reference-mix/).
+
+## Input
+
+```{r Quantification}
+autoQC4L$POSIXct <- as.POSIXct(autoQC4L$time, origin="1970-01-01") 
+autoQC4L <- autoQC4L[autoQC4L$POSIXct > (Sys.time() - (3600 * 24 * params[['timecutoff']])), ]
+
+idx.order <- rev(order(autoQC4L$POSIXct))
+kable(autoQC4L[idx.order <- rev(order(autoQC4L$POSIXct)),])
+```
+
+## Visualization of the models
+
+<a href='https://bioconductor.org/packages/rawrr/'><img src='/home/cpanse/src/bioconductor.org/rawrr/rawrr_logo.png' width=200px></a>
+
+```{r plot.last10.flm.autoqc4l, fig.width=10, fig.height=3.25, eval=TRUE, echo=FALSE}
+
+.flm.autoQC4L.plot <- function(filename, fileprefix = '/srv/www/htdocs/'){
+    start  <- as.numeric(Sys.time()) * 1000        
+    promega <- .getPromega6x5mix()
+    promega[[1]]$abundance <- 1
+    
+    rawfile <- file.path(fileprefix, filename)
+    
+    message(paste("flm on", filename, "..."))
+    
+    mZ <- sapply(promega,
+                 function(x){ (parentIonMass(x$sequence) + sum(x$mod) + 2 * 1.00794) / 2 })
+    abundance <- sapply(promega, function(x){x$abundance})
+    sequence <- sapply(promega, function(x){x$sequence})
+    
+    result <- tryCatch({
+        XIC <- rawrr::readChromatogram(rawfile, mZ, tol = 10)
+        
+        # determine rt from the peptide with the highest abundance
+        idx <- seq(1, 30, by=5) # given by the promega std
+        
+        t.max <- sapply(XIC[idx], function(x){x$times[x$intensities == max(x$intensities)[1]]})
+        
+        t <- rep(t.max, each=5)
+        
+        XIC.log.max <- sapply(XIC, function(x){log(max(x$intensities))})
+        
+        XIC.log.max.t <- sapply(1:length(XIC), function(i){
+            x <- XIC[[i]]
+            rt <- t[i]
+            idx.filter <- rt - 1 < x$times & x$times < rt + 1
+            if(sum(idx.filter) > 0){
+                log(max(x$intensities[idx.filter]), params[['logbase']])
+            }else{NA}
+            
+        })
+        
+        
+    sequence <- factor(sequence, levels= names(sort(ssrc(as.character(unique(sequence))))))
+    lp <- lattice::xyplot(XIC.log.max.t ~ log(abundance, params[['logbase']]) | sequence,
+        panel = function(x, y, ...){
+        
+        weights <- (1 + x - log(1e-4, params[['logbase']]))^2
+        fm <- lm(y ~ x, weights = weights)
+        fm0 <- lm(y ~ x)
+                             
+        panel.abline(a=fm$coefficients[1], b=1, lwd=4, col='grey')
+        panel.abline(a=fm$coefficients[1], b=fm$coefficients[2], lwd=1, col='black')
+        panel.abline(a=fm0$coefficients[1],b=fm0$coefficients[2], lwd=1, col='red')
+                             
+        panel.text(-10,23, round(fm$coefficients[2],2))
+                             
+        panel.text(x=-1,
+            y=5.5, 
+            paste("r.sq:", round(summary(fm)$r.squared,3)),cex=0.75)
+                             
+        panel.text(x=-1,
+                                        y=5.0, 
+                                        paste("slope:", round(fm$coefficients[2],2)),cex=0.75)
+                             panel.text(x=-1,
+                                        y=4.5, 
+                                        paste("intercept:", round(fm$coefficients[1],2)),cex=0.75)
+                            
+        panel.text(x,y, round(weights, 1),cex=0.5,pos=3)
+                             
+        panel.xyplot(x, y,... ); 
+                         }, 
+                         layout = c(6,1),
+                         pch=16,
+                         sub = 'peptides sorted according to SSRC values.',
+                         main=list(as.character(filename), cex=1.0))
+	    
+    return(plot(lp))
+        }, error = function(err){ warning("WARN :", err); as.character(err); })
+
+    }
+
+rv <- lapply(autoQC4L$filename[idx.order], FUN=.flm.autoQC4L.plot)
+```
+
+```{r fitLinearModels}
+tmp <- parallel::mclapply(autoQC4L$filename[idx.order], flm.autoQC4L, mc.cores=12, plot=FALSE, promega=.getPromega6x5mix()) |> base::Reduce(f = rbind)
+```
+
+```{r readPreprocessedLinearModel}
+results <- read.table(params[['inputFilePreprocessedLinearModels']], header=TRUE, sep=';')
+```
+
+```{r write.missing.flm.to.file}
+idx <- which(!tmp$filename %in% results$filename)
+
+
+if(!is.null(idx)){
+	if (file.exists(params[['inputFilePreprocessedLinearModels']])){
+    		write.table(tmp[idx,],
+		  file = params[['inputFilePreprocessedLinearModels']],
+		  row.names = FALSE, col.names=FALSE, append=TRUE,sep=';')  
+	}else{
+    		write.table(tmp,
+		  file = params[['inputFilePreprocessedLinearModels']], row.names = FALSE,sep=';')  
+	}
+}
+
+results <- rbind(results, tmp[idx,])
+```
+
+# Statistics
+
+## Frequencies
+
+```{r assign.instrument}
+results <- assignInstrument(results)
+results$sequence <- factor(results$sequence, levels=(names(sort(ssrc(as.character(unique(results$sequence))), decreasing = FALSE))))
+```
+
+```{r kableInstrumentFreq}
+kable(table(results$instrument)/6)
+```
+
+```{r kableSeq}
+kable(table(results$sequence))
+```
+
+```{r kableUser}
+user <- sapply(unique(results$filename), function(x){strsplit(strsplit(as.character(x), '/')[[1]][4], "_")[[1]][1]})
+kable(table(user))
+```
+
+## Retention time
+
+```{r bwplots0, fig.retina=3}
+
+bwplot(rt ~ sequence | instrument,
+	scales = list(x = list(rot = 45)),
+	xlab = 'peptides sorted according to SSRC.',
+	ylab = 'retention time [minutes]',
+	data=results)
+```
+
+```{r bwplots1.rt, fig.height=5}
+bwplot(rt ~ instrument | sequence,
+	scales = list(x = list(rot = 45)),
+	sub = 'peptides sorted according to SSRC. grey lines indicate the (0.05,0.25,0.5,0.75,0.95) quantiles.',
+	ylab = 'retention time [minutes]',
+	panel = function(x,y, ...){
+		panel.abline(h=quantile(y, c(0.05,0.25,0.5,0.75,0.95), lwd=c(0.5,1,4,1,0.5)), col=c('lightgrey','grey', 'grey', 'grey', 'lightgrey')); 
+		panel.bwplot(x,y,...);},
+	layout=c(6,1),
+	data=results)
+```
+
+## Model quality 
+
+### qqmath
+
+```{r qqmath0, echo=TRUE, fig.width=10, fig.height=3.25}
+qqmath(~ r.squared | sequence,
+  group=instrument,
+  data=results,
+  distribution='qunif',
+  layout=c(6,1),
+  type='l')
+```
+
+```{r qqmath, echo=TRUE, fig.width=10, fig.height=10}
+qqmath(~ r.squared | sequence * instrument ,
+  group=instrument,
+  data=results,
+  distribution='qunif',
+  type='l')
+```
+
+### r.squared
+```{r bwplots.r.squared, echo=FALSE}
+bwplot(r.squared ~ sequence | instrument,
+	panel = function(...){
+	  panel.abline(h=quantile(results$r.squared, c(0.05,0.25,0.5,0.75,0.95)), col='grey'); 
+	  panel.bwplot(...);},
+	scales = list(x = list(rot = 45)),
+	data=results)
+```
+
+## Slope
+
+```{r bwplots.slope }
+bwplot(slope~sequence|instrument,
+	panel = function(...){panel.abline(h=1.0, col='grey'); panel.bwplot(...);},
+	scales = list(x = list(rot = 45)),
+	data=results)
+```
+
+## Intercept (offset)
+
+```{r bwplots.intercept}
+bwplot(intercept~sequence|instrument,
+	panel = function(...){panel.abline(h=quantile(results$intercept, c(0.05,0.25,0.5,0.75,0.95)), col='grey'); panel.bwplot(...);},
+	scales = list(x = list(rot = 45)),
+	data=results)
+```
+
+
+# Miscellaneous
+
+## Promega 6 x 5 mix peptides
+
+this table is used for the fms above.  
+
+```{r kablePromega6x5}
+kable(do.call('rbind',promega.as.data.frame(.getPromega6x5mix())))
+```
+
+
+
+## blacklist
+the file below are ignored
+
+```{r kableBlacklist}
+kable(blacklist)
+```
+
+
+## Benchmark
+
+the overall runtime to fit `r nrow(results)` models
+based on `r length(unique(results$sequence))`x`r length(unique(results$filename))` XICs extracted from
+`r length(unique(results$filename))` raw files
+is **`r round(sum(results$runtime)/6/60)` minutes.**
+
+```{r runtimeDensity}
+densityplot(~ runtime, data=results, subset=sequence=="LASVSVSR", xlab='runtime [second]')
+```
+
+## See also
+
+- http://qcloud2.crg.eu
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
+```{r echo=FALSE}
+end_time <- Sys.time()
+```
+**runtime**: `r format(end_time - start_time)`
+
+
+## Howto generate this file?
+
+the report was generated using
+```
+R --vanilla -e "rmarkdown::render('~/__checkouts/F1000_rawDiag/vignettes/autoQC4L_fgcz-r-033.Rmd', output_file='~/WWW/autoQC4L.html')"
+```
+
+The following software tools were used:
+@parallel @comet1 @comet2 @protViz @rawrr
+
+# References
+
+
