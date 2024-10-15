@@ -492,5 +492,5 @@ ssh r35 "egrep '${MYPATTERN}' /srv/www/htdocs/Data2San/sync_LOGS/pfiles.txt" \
  | parallel -P 4 run_comet 
 
 sleep 1
-test $? -eq 0 && R -q --no-save < /home/cpanse/src/gitlab.bfabric.org/proteomics/qc/inst/scripts/comet_autoQC03dda-post.R
+test $? -eq 0 && R -q --no-site-file --no-save < /home/cpanse/src/gitlab.bfabric.org/proteomics/qc/inst/scripts/comet_autoQC03dda-post.R
 exit $?

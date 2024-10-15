@@ -52,7 +52,10 @@
   filename |>
     load(envir = e)
   
+  e$comet$nConfidentPSM <-   as.integer(e$comet$nConfidentPSM) 
+  e$comet$nPSM <- as.integer(e$comet$nPSM)
   e$comet$assignmentRate <- round (100 * e$comet$nConfidentPSM / e$comet$nPSM)
+
   
   ## rename columns
   colnames(e$comet)[colnames(e$comet) == "filename.y"] <- "File.Name"
