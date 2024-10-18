@@ -75,7 +75,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN,
                      L <- HTML("Hover over a point to see file information. <br>
                                Click on a point to trace peptides and gather raw file header information.")
                    }else{
-                     L <- renderTable(t(vals$hover[, c('File.Name', 'time')]),
+                     L <- renderTable(t(vals$hover),
                                       rownames = T, colnames = F)
                    }
                    
@@ -85,7 +85,7 @@ autoQC03Server <- function(id, filterValues, BFabric, inputfile, readFUN,
                                        solidHeader = TRUE,
                                        collapsible = FALSE,
                                        width = 12,
-                                       height = 150)
+                                       height = 275)
                  })
                  
                  observeEvent(input$rawrr, {
