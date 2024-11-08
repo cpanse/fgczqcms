@@ -126,7 +126,7 @@
 {
   idx <- which(y == max(y))[1]
   
-  seq(idx - 5 , idx + 5)
+  seq(idx - n , idx + n)
 }
 
 .pickPeak.rawrrChromatogram <- function (x) 
