@@ -122,11 +122,11 @@
   })
 }
 
-.extractMaximumPeak <- function (y) 
+.extractMaximumPeak <- function (y, n = 10) 
 {
   idx <- which(y == max(y))[1]
   
-  seq(idx - 10 , idx + 10)
+  seq(idx - 5 , idx + 5)
 }
 
 .pickPeak.rawrrChromatogram <- function (x) 
